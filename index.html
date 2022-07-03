@@ -150,6 +150,20 @@ class Touch{
 	}
 }
 
+class MultiController{
+	constructor(a, b){
+		this.a = a;
+		this.b = b;
+	}
+	
+	getDeltaFromPreviousFrame(time){
+		let a = this.a.getDeltaFromPreviousFrame(time);
+		let b = this.b.getDeltaFromPreviousFrame(time);
+		return {x: a.x + b.x, y: a.y + b.y};
+	}
+	
+}
+
 function ellipse(context, cx, cy, rx, ry){
         context.save(); // save state
         context.beginPath();
@@ -195,10 +209,10 @@ class Game {
 		this.frames = [];
 		this.frames.push({x: 191, y: 1, w: 79, h: 28})
 		
-		this.ball = {x: 20, y:20, w:13, h: 13, dx: 0.05, dy: 0.005};
+		this.ball = {x: 20, y:20, w:13, h: 13, dx: 0.05, dy: 0.05};
 		
 		this.paddle ={x:100, y: 300, w:200, h:50};
-		this.controller = new Keyboard();
+		this.controller = new MultiController(new Keyboard(), new Touch());
 		
 		
 		canvas.addEventListener('mousemove', (e)=>{
