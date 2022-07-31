@@ -281,22 +281,22 @@ class Game {
 		let futureBallY = this.ball.y + this.ball.dy * dt;
 		
 		if (futureBallY + this.ball.h / 2.0 > 600){
-			//futureBallY = 600 - this.ball.h / 2.0;
+			futureBallY = 600 - this.ball.h / 2.0;
 			this.ball.dy *= -1;
 		}
 		
 		if (futureBallY < this.ball.h / 2.0){
-			//futureBallY = this.ball.h / 2.0;
+			futureBallY = this.ball.h / 2.0;
 			this.ball.dy *= -1;
 		}
 		
 		if (futureBallX + this.ball.w / 2.0 > 800){
-			//futureBallX = 800 - this.ball.w / 2.0;
+			futureBallX = 800 - this.ball.w / 2.0;
 			this.ball.dx *= -1;
 		}
 		
 		if (futureBallX < this.ball.w / 2.0){
-			//futureBallX = this.ball.w / 2.0;
+			futureBallX = this.ball.w / 2.0;
 			this.ball.dx *= -1;
 		}
 		
@@ -316,14 +316,9 @@ class Game {
 		
 		
 		let ellipseRadiusSq = (rx * Math.cos(kappa)) ** 2 + (ry * Math.sin(kappa)) ** 2;
-		let ballToEllipseCenterSq = (dx **2 + dy **2);
-									
-		let phi = Math.atan2(ry * Math.cos(kappa), - rx * Math.sin(kappa));
+		let ballToEllipseCenterSq = (dx **2 + dy **2);										
 		
-		let k = this.paddle.x + rx * Math.cos(kappa);
-		let m = this.paddle.y + ry * Math.sin(kappa);
-		
-		
+		//note line is translated such that the origin is paddle
 		let line = this.lineFromPoints({x: this.ball.x - this.paddle.x, y: this.ball.y- this.paddle.y}, 
 		                               {x: this.ball.x + this.ball.dx - this.paddle.x, y: this.ball.y + this.ball.dy - this.paddle.y});		
 		let intersection = this.intersect({a: rx, b: ry}, line);
@@ -331,21 +326,21 @@ class Game {
 			let d1 = this.sqDistance(this.ptAdd(intersection.p1, this.paddle), this.ball);
 			let d2 = this.sqDistance(this.ptAdd(intersection.p2, this.paddle), this.ball);
 			
-			let ipt = intersection.p1;
+			let nearestIntersectionPoint = intersection.p1;
 			if (d2 < d1){
-				ipt = intersection.p2;
+				nearestIntersectionPoint = intersection.p2;
 			}
-		 
+			
 		
 			ctx.beginPath();
-			ctx.arc(this.paddle.x + ipt.x, this.paddle.y + ipt.y, 7, 0, 2 * Math.PI);			
+			ctx.arc(this.paddle.x + nearestIntersectionPoint.x, this.paddle.y + nearestIntersectionPoint.y, 7, 0, 2 * Math.PI);			
 			ctx.stroke();
 					
-			theta = Math.atan2(ipt.y , ipt.x);
+			theta = Math.atan2(nearestIntersectionPoint.y , nearestIntersectionPoint.x);
 			kappa = Math.atan2(rx * Math.sin(theta), ry * Math.cos(theta));
-			phi = Math.atan2(ry * Math.cos(kappa), - rx * Math.sin(kappa));
-			k = this.paddle.x +ipt.x;
-			m = this.paddle.y +ipt.y;
+			let phi = Math.atan2(ry * Math.cos(kappa), - rx * Math.sin(kappa));
+			let k = this.paddle.x +nearestIntersectionPoint.x;
+			let m = this.paddle.y +nearestIntersectionPoint.y;
 			
 			//Tangent line
 			ctx.beginPath();
@@ -365,6 +360,33 @@ class Game {
 			ctx.moveTo(this.ball.x, this.ball.y);
 			ctx.lineTo(k,m);
 			ctx.stroke();
+			
+			let incidentAngle = Math.atan2(this.ball.dy, this.ball.dx);
+			let refl = 2 * phi + Math.PI - incidentAngle;
+
+			//reflection
+			ctx.beginPath();
+			ctx.moveTo(k, m);
+			ctx.lineTo(k - 100 * Math.cos(refl), m - 100 * Math.sin(refl));
+			ctx.stroke();
+			
+			
+			
+			//if intersects
+			if (ballToEllipseCenterSq <= ellipseRadiusSq){
+		
+				let ballSpeed = Math.sqrt(this.ball.dx ** 2 + this.ball.dy ** 2);
+								
+				this.ball.dx = -ballSpeed * Math.cos(refl);
+				this.ball.dy = -ballSpeed * Math.sin(refl);
+				
+				this.ball.x = k - Math.cos(refl)*ballSpeed;
+				this.ball.y = m - Math.sin(refl)*ballSpeed;
+			}else{
+				this.ball.x = futureBallX;
+				this.ball.y = futureBallY;
+			}
+			
 		}else{
 			ctx.beginPath();
 			ctx.moveTo(this.ball.x, this.ball.y);
@@ -372,22 +394,13 @@ class Game {
 			ctx.lineTo(this.ball.x + this.ball.dx * 10000, this.ball.y + this.ball.dy * 10000);
 			ctx.stroke();
 			ctx.setLineDash([]);
-		}
-		
-		
-		if (ballToEllipseCenterSq <= ellipseRadiusSq){
-		
-			let ballSpeed = Math.sqrt(this.ball.dx ** 2 + this.ball.dy ** 2);
-							
-			this.ball.dx = -ballSpeed * Math.cos(phi + Math.PI / 2.0);
-			this.ball.dy = -ballSpeed * Math.sin(phi + Math.PI / 2.0);
 			
-			futureBallX = k - Math.cos(phi + Math.PI / 2.0)*ballSpeed;
-			futureBallY = m - Math.sin(phi + Math.PI / 2.0)*ballSpeed;
-		}else{
 			this.ball.x = futureBallX;
 			this.ball.y = futureBallY;
 		}
+		
+		
+
 
 	}
 	
