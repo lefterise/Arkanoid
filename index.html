@@ -247,6 +247,35 @@ class Game {
 		
 	}
 	
+	
+	lineFromPoints(p1, p2){
+		let m = (p2.y - p1.y) / (p2.x - p1.x);		
+		let c = p1.y - m * p1.x;
+		return {m: m, c: c};
+	}
+	
+	intersect(e, l){		
+		let a = (e.a**2) * (l.m**2) + (e.b**2);
+		let b = 2 * (e.a**2) * l.m * l.c;		
+		let c = (e.a**2) * ((l.c**2) - (e.b**2));
+		let d = (b**2) - 4 * a * c;
+		if (d < 0) return null;
+		
+		let x1 = (-b + Math.sqrt(d)) / 2.0 / a;
+		let y1 = l.m * x1 + l.c;
+		let x2 = (-b - Math.sqrt(d)) / 2.0 / a;
+		let y2 = l.m * x2 + l.c;
+		return {p1: {x:x1, y:y1}, p2: {x:x2, y:y2}};
+	}
+	
+	sqDistance(a, b){
+		return (a.x - b.x) ** 2 + (a.y - b.y)**2;
+	}
+	
+	ptAdd(a,b){
+		return {x: a.x + b.x, y: a.y + b.y};
+	}
+	
 	updateBall(dt, ctx){
 		let futureBallX = this.ball.x + this.ball.dx * dt;
 		let futureBallY = this.ball.y + this.ball.dy * dt;
@@ -294,41 +323,59 @@ class Game {
 		let k = this.paddle.x + rx * Math.cos(kappa);
 		let m = this.paddle.y + ry * Math.sin(kappa);
 		
-		//Projection line
-		ctx.beginPath();
-		ctx.moveTo(this.ball.x, this.ball.y);
-		ctx.lineTo(this.ball.x + this.ball.dx * 10000, this.ball.y + this.ball.dy * 10000);
-		ctx.stroke();
 		
-		
-		//Tangent line
-		ctx.beginPath();
-		ctx.moveTo(k + 50 * Math.cos(phi), m + 50 * Math.sin(phi));
-		ctx.lineTo(k - 50 * Math.cos(phi), m - 50 * Math.sin(phi));
-		ctx.stroke();
-		
-		//Normal
-		ctx.beginPath();
-		ctx.moveTo(k, m);
-		ctx.lineTo(k - 50 * Math.cos(phi + Math.PI / 2.0), m - 50 * Math.sin(phi + Math.PI / 2.0));
-		ctx.stroke();
-		
-		//Collision point
-		ctx.beginPath();
-		ctx.arc(this.paddle.x + rx * Math.cos(kappa), this.paddle.y + ry * Math.sin(kappa), 7, 0, 2 * Math.PI);
-		ctx.stroke();
-		
-		//Ball to collision point
-		ctx.beginPath();
-		ctx.moveTo(this.paddle.x + rx * Math.cos(kappa), this.paddle.y + ry * Math.sin(kappa));
-		ctx.lineTo(futureBallX, futureBallY);
-		ctx.stroke();
+		let line = this.lineFromPoints({x: this.ball.x - this.paddle.x, y: this.ball.y- this.paddle.y}, 
+		                               {x: this.ball.x + this.ball.dx - this.paddle.x, y: this.ball.y + this.ball.dy - this.paddle.y});		
+		let intersection = this.intersect({a: rx, b: ry}, line);
+		if (intersection){
+			let d1 = this.sqDistance(this.ptAdd(intersection.p1, this.paddle), this.ball);
+			let d2 = this.sqDistance(this.ptAdd(intersection.p2, this.paddle), this.ball);
 			
+			let ipt = intersection.p1;
+			if (d2 < d1){
+				ipt = intersection.p2;
+			}
+		 
+		
+			ctx.beginPath();
+			ctx.arc(this.paddle.x + ipt.x, this.paddle.y + ipt.y, 7, 0, 2 * Math.PI);			
+			ctx.stroke();
+					
+			theta = Math.atan2(ipt.y , ipt.x);
+			kappa = Math.atan2(rx * Math.sin(theta), ry * Math.cos(theta));
+			phi = Math.atan2(ry * Math.cos(kappa), - rx * Math.sin(kappa));
+			k = this.paddle.x +ipt.x;
+			m = this.paddle.y +ipt.y;
+			
+			//Tangent line
+			ctx.beginPath();
+			ctx.moveTo(k + 50 * Math.cos(phi), m + 50 * Math.sin(phi));
+			ctx.lineTo(k - 50 * Math.cos(phi), m - 50 * Math.sin(phi));
+			ctx.stroke();
+			
+			//Normal
+			ctx.beginPath();
+			ctx.moveTo(k, m);
+			ctx.lineTo(k - 50 * Math.cos(phi + Math.PI / 2.0), m - 50 * Math.sin(phi + Math.PI / 2.0));
+			ctx.stroke();
+			
+			
+			//Projection line
+			ctx.beginPath();
+			ctx.moveTo(this.ball.x, this.ball.y);
+			ctx.lineTo(k,m);
+			ctx.stroke();
+		}else{
+			ctx.beginPath();
+			ctx.moveTo(this.ball.x, this.ball.y);
+			ctx.setLineDash([5, 15]);
+			ctx.lineTo(this.ball.x + this.ball.dx * 10000, this.ball.y + this.ball.dy * 10000);
+			ctx.stroke();
+			ctx.setLineDash([]);
+		}
+		
+		
 		if (ballToEllipseCenterSq <= ellipseRadiusSq){
-
-		ctx.beginPath();
-		ctx.arc(this.paddle.x + rx * Math.cos(kappa), this.paddle.y + ry * Math.sin(kappa), 7, 0, 2 * Math.PI);
-		ctx.fill();
 		
 			let ballSpeed = Math.sqrt(this.ball.dx ** 2 + this.ball.dy ** 2);
 							
