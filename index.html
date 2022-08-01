@@ -87,9 +87,9 @@ class Keyboard{
 		if (this.keysDown.length > 0){
 		let direction = this.keysDown[this.keysDown.length - 1];
 			if (this.isLeft(direction))
-				dx = -1.0;
+				dx = -1.5;
 			else if (this.isRight(direction))
-				dx = 1.0;
+				dx = 1.5;
 		}
 		let dt = time - this.prevTime;
 		this.prevTime = time;
@@ -178,16 +178,27 @@ function ellipse(context, cx, cy, rx, ry){
 
 function ellipse2(context, cx, cy, rx, ry){
         context.save(); // save state
-        context.beginPath();
 
+		
+        context.beginPath();
         context.translate(cx-rx, cy-ry);
         context.scale(rx, ry);
+		
+		var grd = context.createRadialGradient(1, 1, 0.4,   1, 1, 1);
+		grd.addColorStop(0, "WHITE");
+		grd.addColorStop(0.20, "GRAY");
+		grd.addColorStop(0.35, "BLACK");
+		grd.addColorStop(0.4, "DARKbLUE");
+		grd.addColorStop(0.6, "bLUE");
+		grd.addColorStop(0.99, "DARKbLUE");
+		grd.addColorStop(1, "BLACK");
+		context.fillStyle = grd;
+		//context.fillRect(0, 0, 150, 100);
         context.arc(1, 1, 1, 0, 2 * Math.PI, false);
-
+		context.fill();
         context.restore(); // restore to original state
-        context.fill();
+       
 }
-
 
 class Game {
 
@@ -209,9 +220,9 @@ class Game {
 		this.frames = [];
 		this.frames.push({x: 191, y: 1, w: 79, h: 28})
 		
-		this.ball = {x: 20, y:20, w:13, h: 13, dx: 0.05, dy: 0.05};
+		this.ball = {x: 20, y:20, w:13, h: 13, dx: 0.25, dy: 0.25};
 		
-		this.paddle ={x:100, y: 300, w:200, h:50};
+		this.paddle ={x:100, y: 540, w:200, h:50};
 		this.controller = new MultiController(new Keyboard(), new Touch());
 		
 		
@@ -332,15 +343,22 @@ class Game {
 			}
 			
 		
-			ctx.beginPath();
-			ctx.arc(this.paddle.x + nearestIntersectionPoint.x, this.paddle.y + nearestIntersectionPoint.y, 7, 0, 2 * Math.PI);			
-			ctx.stroke();
+
 					
 			theta = Math.atan2(nearestIntersectionPoint.y , nearestIntersectionPoint.x);
 			kappa = Math.atan2(rx * Math.sin(theta), ry * Math.cos(theta));
 			let phi = Math.atan2(ry * Math.cos(kappa), - rx * Math.sin(kappa));
 			let k = this.paddle.x +nearestIntersectionPoint.x;
 			let m = this.paddle.y +nearestIntersectionPoint.y;
+			
+			let incidentAngle = Math.atan2(this.ball.dy, this.ball.dx);
+			let refl = 2 * phi + Math.PI - incidentAngle;
+			
+			
+			
+			ctx.beginPath();
+			ctx.arc(this.paddle.x + nearestIntersectionPoint.x, this.paddle.y + nearestIntersectionPoint.y, 7, 0, 2 * Math.PI);			
+			ctx.stroke();
 			
 			//Tangent line
 			ctx.beginPath();
@@ -354,22 +372,18 @@ class Game {
 			ctx.lineTo(k - 50 * Math.cos(phi + Math.PI / 2.0), m - 50 * Math.sin(phi + Math.PI / 2.0));
 			ctx.stroke();
 			
-			
 			//Projection line
 			ctx.beginPath();
 			ctx.moveTo(this.ball.x, this.ball.y);
 			ctx.lineTo(k,m);
-			ctx.stroke();
-			
-			let incidentAngle = Math.atan2(this.ball.dy, this.ball.dx);
-			let refl = 2 * phi + Math.PI - incidentAngle;
+			ctx.stroke();			
 
 			//reflection
 			ctx.beginPath();
 			ctx.moveTo(k, m);
 			ctx.lineTo(k - 100 * Math.cos(refl), m - 100 * Math.sin(refl));
 			ctx.stroke();
-			
+	
 			
 			
 			//if intersects
@@ -388,13 +402,14 @@ class Game {
 			}
 			
 		}else{
+			/*
 			ctx.beginPath();
 			ctx.moveTo(this.ball.x, this.ball.y);
 			ctx.setLineDash([5, 15]);
 			ctx.lineTo(this.ball.x + this.ball.dx * 10000, this.ball.y + this.ball.dy * 10000);
 			ctx.stroke();
 			ctx.setLineDash([]);
-			
+			*/
 			this.ball.x = futureBallX;
 			this.ball.y = futureBallY;
 		}
@@ -408,9 +423,16 @@ class Game {
 		let sprite = this.sprites["ball"];
 		//ctx.drawImage(sprite, this.ball.x - this.ball.w/2, this.ball.y - this.ball.h/2, this.ball.w, this.ball.h);
 		
+		var grd = ctx.createRadialGradient(this.ball.x, this.ball.y, 1,   this.ball.x, this.ball.y, 7);
+		grd.addColorStop(0, "WHITE");
+		grd.addColorStop(0.99, "GRAY");
+		grd.addColorStop(1, "Black");
+		ctx.fillStyle = grd;
+
 		ctx.beginPath();
-			ctx.arc(this.ball.x, this.ball.y, 7, 0, 2 * Math.PI);
-			ctx.stroke();
+		ctx.arc(this.ball.x, this.ball.y, 7, 0, 2 * Math.PI);
+		ctx.fill();
+		ctx.stroke();
 	}
 	
 	drawPaddle(ctx){
@@ -418,8 +440,9 @@ class Game {
 		let sprite = this.sprites["arcanoids"];
 		//ctx.drawImage(sprite, src.x, src.y, src.w, src.h, this.paddle.x  - 79/2, this.paddle.y - 28/2, 79, 28);
 		
-		ellipse(ctx, this.paddle.x, this.paddle.y, this.paddle.w/2.0, this.paddle.h/2.0);
-		ellipse(ctx, this.paddle.x, this.paddle.y, (this.paddle.w + this.ball.w)/2.0, (this.paddle.h + this.ball.h)/2.0);
+
+		ellipse2(ctx, this.paddle.x, this.paddle.y, this.paddle.w/2.0, this.paddle.h/2.0);
+		//ellipse(ctx, this.paddle.x, this.paddle.y, (this.paddle.w + this.ball.w)/2.0, (this.paddle.h + this.ball.h)/2.0);
 	}
 	
 	draw(ctx, time){	
