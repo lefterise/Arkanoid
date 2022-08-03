@@ -6,8 +6,48 @@ html, body {
   margin: 0;
 }
 </style>
+<script src="geometry.js"></script>
 <script>
 
+function roundRect(
+	  ctx,
+	  x,
+	  y,
+	  width,
+	  height,
+	  radius = 5,
+	  fill = false,
+	  stroke = true
+) {
+	  if (typeof radius === 'number') {
+		radius = {tl: radius, tr: radius, br: radius, bl: radius};
+	  } else {
+		radius = {...{tl: 0, tr: 0, br: 0, bl: 0}, ...radius};
+	  }
+	  ctx.beginPath();
+	  ctx.moveTo(x + radius.tl, y);
+	  ctx.lineTo(x + width - radius.tr, y);
+	  ctx.quadraticCurveTo(x + width, y, x + width, y + radius.tr);
+	  ctx.lineTo(x + width, y + height - radius.br);
+	  ctx.quadraticCurveTo(x + width, y + height, x + width - radius.br, y + height);
+	  ctx.lineTo(x + radius.bl, y + height);
+	  ctx.quadraticCurveTo(x, y + height, x, y + height - radius.bl);
+	  ctx.lineTo(x, y + radius.tl);
+	  ctx.quadraticCurveTo(x, y, x + radius.tl, y);
+	  ctx.closePath();
+	  if (fill) {
+		var grd = ctx.createLinearGradient(x+width/2,y, x+width/2,y+height);
+		grd.addColorStop(0, "Yellow");		
+		grd.addColorStop(0.7, "Orange");
+		grd.addColorStop(1, "DarkOrange");
+		ctx.fillStyle = grd;
+		
+		ctx.fill();
+	  }
+	  if (stroke) {
+		ctx.stroke();
+	  }
+}
 
 function loadSprites(files, completionHandler){
 	var numLoaded = 0;
@@ -200,6 +240,61 @@ function ellipse2(context, cx, cy, rx, ry){
        
 }
 
+
+
+function lineFromPoints(p1, p2){
+	let m = (p2.y - p1.y) / (p2.x - p1.x);		
+	let c = p1.y - m * p1.x;
+	return {m: m, c: c};
+}
+
+class Block{
+	constructor(x,y){
+		this.x = x;
+		this.y = y;
+		this.w = 96;
+		this.h = 30;
+	}
+	
+
+	collides(ball, dt){
+		let m = (ball.dy) / (ball.dx);		
+		let c = ball.y - m * ball.x;
+		
+		let ybottom = this.y + this.h + ball.r;		
+		let xbottom = (ybottom - c) / m;
+		
+		if (ball.y + ball.dy * dt <= ybottom && ybottom <= ball.y && this.x < xbottom && xbottom < this.x + this.w){
+			return {x: xbottom, y: ybottom, direction: 'bottom'};
+		}
+		
+		let ytop = this.y - ball.r;		
+		let xtop = (ytop - c) / m;
+		
+		if (ball.y + ball.dy * dt >= ytop && ytop >= ball.y && this.x < xtop && xtop < this.x + this.w){
+			return {x: xtop, y: ytop, direction: 'top'};
+		}
+
+		let xleft = this.x - ball.r;		
+		let yleft = m * xleft + c;
+		
+		if (ball.x + ball.dx * dt >= xleft && xleft >= ball.x && this.y < yleft && yleft < this.y + this.h){
+			return {x: xleft, y: yleft, direction: 'left'};
+		}
+
+		let xright = this.x + this.w + ball.r;		
+		let yright = m * xright + c;
+		
+		if (ball.x + ball.dx * dt <= xright && xright <= ball.x && this.y < yright && yright < this.y + this.h){
+			return {x: xright, y: yright, direction: 'right'};
+		}
+	}	
+	
+	draw(ctx){
+		roundRect(ctx, this.x, this.y, this.w, this.h, this.h / 3, true, true);
+	}
+}
+
 class Game {
 
 	setSprites(sprites){
@@ -220,7 +315,7 @@ class Game {
 		this.frames = [];
 		this.frames.push({x: 191, y: 1, w: 79, h: 28})
 		
-		this.ball = {x: 20, y:20, w:13, h: 13, dx: 0.25, dy: 0.25};
+		this.ball = {x: 20, y:20, w:13, h: 13, dx: 0.25, dy: 0.25, r: 7};
 		
 		this.paddle ={x:100, y: 540, w:200, h:50};
 		this.controller = new MultiController(new Keyboard(), new Touch());
@@ -238,6 +333,15 @@ class Game {
 			this.ball.y =y;						
 		}, false);
 		
+		
+		this.blocks = [];
+		
+		for(let r = 0; r < 4; ++r){
+			for(let c = 2; c < 6; ++c){
+				let block = new Block(10 + 98 * c, 50 + 32 * r);
+				this.blocks.push(block);
+			}
+		}
 	}
 
 	
@@ -257,148 +361,112 @@ class Game {
 	drawLevel(ctx){
 		
 	}
-	
-	
-	lineFromPoints(p1, p2){
-		let m = (p2.y - p1.y) / (p2.x - p1.x);		
-		let c = p1.y - m * p1.x;
-		return {m: m, c: c};
-	}
-	
-	intersect(e, l){		
-		let a = (e.a**2) * (l.m**2) + (e.b**2);
-		let b = 2 * (e.a**2) * l.m * l.c;		
-		let c = (e.a**2) * ((l.c**2) - (e.b**2));
-		let d = (b**2) - 4 * a * c;
-		if (d < 0) return null;
 		
-		let x1 = (-b + Math.sqrt(d)) / 2.0 / a;
-		let y1 = l.m * x1 + l.c;
-		let x2 = (-b - Math.sqrt(d)) / 2.0 / a;
-		let y2 = l.m * x2 + l.c;
-		return {p1: {x:x1, y:y1}, p2: {x:x2, y:y2}};
-	}
-	
-	sqDistance(a, b){
-		return (a.x - b.x) ** 2 + (a.y - b.y)**2;
-	}
-	
-	ptAdd(a,b){
-		return {x: a.x + b.x, y: a.y + b.y};
-	}
-	
 	updateBall(dt, ctx){
-		let futureBallX = this.ball.x + this.ball.dx * dt;
-		let futureBallY = this.ball.y + this.ball.dy * dt;
+		let futureBall = {x: this.ball.x + this.ball.dx * dt,
+					      y: this.ball.y + this.ball.dy * dt};
 		
-		if (futureBallY + this.ball.h / 2.0 > 600){
-			futureBallY = 600 - this.ball.h / 2.0;
+		if (futureBall.y + this.ball.h / 2.0 > 600){
+			futureBall.y = 600 - this.ball.h / 2.0;
 			this.ball.dy *= -1;
 		}
 		
-		if (futureBallY < this.ball.h / 2.0){
-			futureBallY = this.ball.h / 2.0;
+		if (futureBall.y < this.ball.h / 2.0){
+			futureBall.y = this.ball.h / 2.0;
 			this.ball.dy *= -1;
 		}
 		
-		if (futureBallX + this.ball.w / 2.0 > 800){
-			futureBallX = 800 - this.ball.w / 2.0;
+		if (futureBall.x + this.ball.w / 2.0 > 800){
+			futureBall.x = 800 - this.ball.w / 2.0;
 			this.ball.dx *= -1;
 		}
 		
-		if (futureBallX < this.ball.w / 2.0){
-			futureBallX = this.ball.w / 2.0;
+		if (futureBall.x < this.ball.w / 2.0){
+			futureBall.x = this.ball.w / 2.0;
 			this.ball.dx *= -1;
 		}
 		
-		//https://math.stackexchange.com/questions/3670465/calculate-distance-from-point-to-ellipse-edge
-		//https://math.stackexchange.com/questions/4086824/how-to-find-the-polar-coordinate-angle-of-the-tangent-of-any-point-on-an-ellipse
-		let dx = futureBallX - this.paddle.x;
-		let dy = futureBallY - this.paddle.y;		
+		for(let block of this.blocks){			
+			let collision = block.collides(this.ball, dt);
+			if (collision){
+				this.drawBall(ctx);
+				
+				if (collision.direction == 'top' ||collision.direction == 'bottom'){
+					this.ball.x = collision.x-this.ball.dy;
+					this.ball.y = collision.y-this.ball.dy;
+					this.ball.dy = -this.ball.dy;
+				}else {
+					this.ball.x = collision.x-this.ball.dx;
+					this.ball.y = collision.y-this.ball.dx;
+					this.ball.dx = -this.ball.dx;
+				}
+			}
+		}
 		
-		let theta = Math.atan2(dy, dx);		
+
+			
 		
 		let ballRadius = 7;
 		
 		let rx = (this.paddle.w) / 2.0 + ballRadius;
-		let ry = (this.paddle.h) / 2.0 + ballRadius;
-		
-		let kappa = Math.atan2(rx * Math.sin(theta), ry * Math.cos(theta));
+		let ry = (this.paddle.h) / 2.0 + ballRadius;					
 		
 		
-		let ellipseRadiusSq = (rx * Math.cos(kappa)) ** 2 + (ry * Math.sin(kappa)) ** 2;
-		let ballToEllipseCenterSq = (dx **2 + dy **2);										
+		let vector = Vector.create(this.ball);
+		let ellip = new Ellipse(this.paddle.x, this.paddle.y, rx, ry);
+		let intersectionTime = vector.intersectEllipse(ellip);
 		
-		//note line is translated such that the origin is paddle
-		let line = this.lineFromPoints({x: this.ball.x - this.paddle.x, y: this.ball.y- this.paddle.y}, 
-		                               {x: this.ball.x + this.ball.dx - this.paddle.x, y: this.ball.y + this.ball.dy - this.paddle.y});		
-		let intersection = this.intersect({a: rx, b: ry}, line);
-		if (intersection){
-			let d1 = this.sqDistance(this.ptAdd(intersection.p1, this.paddle), this.ball);
-			let d2 = this.sqDistance(this.ptAdd(intersection.p2, this.paddle), this.ball);
+		if (intersectionTime && intersectionTime[0] > 0){			
+			let intersectionPoint = vector.getPointAt(intersectionTime[0]);
+			let polarAngle = ellip.getPolarAngle(intersectionPoint);
+			let tangentAngle = ellip.getTangentAngleAtPolarAngle(polarAngle);
+						
 			
-			let nearestIntersectionPoint = intersection.p1;
-			if (d2 < d1){
-				nearestIntersectionPoint = intersection.p2;
-			}
+			let incidentAngle = vector.getDirectionAngle();
+			let reflectedAngle = 2 * tangentAngle + Math.PI - incidentAngle;
 			
-		
-
-					
-			theta = Math.atan2(nearestIntersectionPoint.y , nearestIntersectionPoint.x);
-			kappa = Math.atan2(rx * Math.sin(theta), ry * Math.cos(theta));
-			let phi = Math.atan2(ry * Math.cos(kappa), - rx * Math.sin(kappa));
-			let k = this.paddle.x +nearestIntersectionPoint.x;
-			let m = this.paddle.y +nearestIntersectionPoint.y;
-			
-			let incidentAngle = Math.atan2(this.ball.dy, this.ball.dx);
-			let refl = 2 * phi + Math.PI - incidentAngle;
-			
-			
-			
+						
 			ctx.beginPath();
-			ctx.arc(this.paddle.x + nearestIntersectionPoint.x, this.paddle.y + nearestIntersectionPoint.y, 7, 0, 2 * Math.PI);			
+			ctx.arc(intersectionPoint.x, intersectionPoint.y, 7, 0, 2 * Math.PI);			
 			ctx.stroke();
 			
 			//Tangent line
 			ctx.beginPath();
-			ctx.moveTo(k + 50 * Math.cos(phi), m + 50 * Math.sin(phi));
-			ctx.lineTo(k - 50 * Math.cos(phi), m - 50 * Math.sin(phi));
+			ctx.moveTo(intersectionPoint.x + 50 * Math.cos(tangentAngle), intersectionPoint.y + 50 * Math.sin(tangentAngle));
+			ctx.lineTo(intersectionPoint.x - 50 * Math.cos(tangentAngle), intersectionPoint.y - 50 * Math.sin(tangentAngle));
 			ctx.stroke();
 			
 			//Normal
 			ctx.beginPath();
-			ctx.moveTo(k, m);
-			ctx.lineTo(k - 50 * Math.cos(phi + Math.PI / 2.0), m - 50 * Math.sin(phi + Math.PI / 2.0));
+			ctx.moveTo(intersectionPoint.x, intersectionPoint.y);
+			ctx.lineTo(intersectionPoint.x - 50 * Math.cos(tangentAngle + Math.PI / 2.0), intersectionPoint.y - 50 * Math.sin(tangentAngle + Math.PI / 2.0));
 			ctx.stroke();
 			
 			//Projection line
 			ctx.beginPath();
 			ctx.moveTo(this.ball.x, this.ball.y);
-			ctx.lineTo(k,m);
+			ctx.lineTo(intersectionPoint.x, intersectionPoint.y);
 			ctx.stroke();			
 
 			//reflection
 			ctx.beginPath();
-			ctx.moveTo(k, m);
-			ctx.lineTo(k - 100 * Math.cos(refl), m - 100 * Math.sin(refl));
+			ctx.moveTo(intersectionPoint.x, intersectionPoint.y);
+			ctx.lineTo(intersectionPoint.x - 100 * Math.cos(reflectedAngle), intersectionPoint.y - 100 * Math.sin(reflectedAngle));
 			ctx.stroke();
-	
+					
 			
-			
-			//if intersects
-			if (ballToEllipseCenterSq <= ellipseRadiusSq){
+			if (intersectionTime[0] < dt && dt < intersectionTime[1]){
 		
-				let ballSpeed = Math.sqrt(this.ball.dx ** 2 + this.ball.dy ** 2);
+				let ballSpeed = vector.getMagnitude();
 								
-				this.ball.dx = -ballSpeed * Math.cos(refl);
-				this.ball.dy = -ballSpeed * Math.sin(refl);
+				this.ball.dx = -ballSpeed * Math.cos(reflectedAngle);
+				this.ball.dy = -ballSpeed * Math.sin(reflectedAngle);
 				
-				this.ball.x = k - Math.cos(refl)*ballSpeed;
-				this.ball.y = m - Math.sin(refl)*ballSpeed;
+				this.ball.x = intersectionPoint.x + this.ball.dx;
+				this.ball.y = intersectionPoint.y - this.ball.dy;
 			}else{
-				this.ball.x = futureBallX;
-				this.ball.y = futureBallY;
+				this.ball.x = futureBall.x;
+				this.ball.y = futureBall.y;
 			}
 			
 		}else{
@@ -410,13 +478,9 @@ class Game {
 			ctx.stroke();
 			ctx.setLineDash([]);
 			*/
-			this.ball.x = futureBallX;
-			this.ball.y = futureBallY;
+			this.ball.x = futureBall.x;
+			this.ball.y = futureBall.y;
 		}
-		
-		
-
-
 	}
 	
 	drawBall(ctx){
@@ -452,12 +516,41 @@ class Game {
 		}
 		this.prevTime = time;
 		
-		this.checkController(time);		
+		this.checkController(time);	
+		
 		this.drawBackground(ctx);
 		this.updateBall(dt,ctx);
 		this.drawPaddle(ctx);
 		this.drawBall(ctx);
 		this.drawLevel(ctx);
+		
+		for(let block of this.blocks){
+			block.draw(ctx);
+		}
+		
+		/*
+		ctx.beginPath();
+		ctx.arc(40, 40, 20, 0, 2 * Math.PI);
+		ctx.stroke();
+		
+		ctx.beginPath();
+		ctx.moveTo(10, 10);
+		ctx.lineTo(70, 60);
+		ctx.stroke();
+				
+		let line = this.lineFromPoints({x: 10, y:10}, {x: 70, y:60});
+		let circle = {x: 40, y:40, r: 20};
+		let pts = intersectLineCircle(line, circle);
+	
+	
+		ctx.beginPath();
+		ctx.arc(pts.p1.x, pts.p1.y, 5, 0, 2 * Math.PI);
+		ctx.stroke();
+		
+		ctx.beginPath();
+		ctx.arc(pts.p2.x, pts.p2.y, 5, 0, 2 * Math.PI);
+		ctx.stroke();
+		*/
 	}
 	
 	checkCollision(time){
