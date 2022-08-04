@@ -249,119 +249,20 @@ function lineFromPoints(p1, p2){
 }
 
 class Block{
-	constructor(x,y){
+	constructor(x,y,w,h, padding){
 		this.x = x;
 		this.y = y;
-		this.w = 96;
-		this.h = 30;
+		this.w = w;
+		this.h = h;
 		
-		this.rect = new Rectangle(x,y,96,30);
+		this.rect = new Rectangle(x,y,w,h, padding);
 	}
 	
-/*	
-  collides(ball, dt, ctx){
-		let ybottom = this.y + this.h + ball.r;		
-		let t = (ybottom - ball.y) / ball.dy				
-		let xbottom = ball.x + ball.dx * t;
-		
-		
-		let ytop = this.y - ball.r;
-		let xleft = this.x - ball.r;
-		let xright = this.x + this.w + ball.r;		
-		
-		ctx.beginPath();
-		ctx.moveTo(this.x, ybottom);
-		ctx.lineTo(this.x + this.w, ybottom);
-		ctx.stroke();
-		
-		ctx.beginPath();
-		ctx.moveTo(this.x, ytop);
-		ctx.lineTo(this.x + this.w, ytop);
-		ctx.stroke();
-		
-		ctx.beginPath();
-		ctx.moveTo(xleft, this.y);
-		ctx.lineTo(xleft, this.y + this.h);
-		ctx.stroke();
-		
-		ctx.beginPath();
-		ctx.moveTo(xright, this.y);
-		ctx.lineTo(xright, this.y + this.h);
-		ctx.stroke();
-		
-		ctx.beginPath();
-		ctx.arc(this.x, this.y, 7, 0, 2 * Math.PI);
-		ctx.stroke();
-		
-		ctx.beginPath();
-		ctx.arc(this.x + this.w, this.y, 7, 0, 2 * Math.PI);
-		ctx.stroke();
-		
-		ctx.beginPath();
-		ctx.arc(this.x + this.w, this.y + this.h, 7, 0, 2 * Math.PI);
-		ctx.stroke();
-		
-		ctx.beginPath();
-		ctx.arc(this.x, this.y + this.h, 7, 0, 2 * Math.PI);
-		ctx.stroke();
-		
-		if (0 <= t && t <= dt && this.x <= xbottom && xbottom <= this.x + this.w){			
-			return {x: xbottom, y: ybottom, t:t, direction: 'bottom'};
-		}
-		
-		
-		t = (ytop - ball.y) / ball.dy	
-		let xtop = ball.x + ball.dx * t;
-		
-		if (0 <= t && t <= dt && this.x <= xtop && xtop <= this.x + this.w){				
-			return {x: xtop, y: ytop, t:t, direction: 'top'};
-		}
 
-		
-		t = (xleft - ball.x) / ball.dx
-		let yleft = ball.y + ball.dy * t;
-		
-		if (0 <= t && t <= dt && this.y <= yleft && yleft <= this.y + this.h){			
-			return {x: xleft, y: yleft, t:t, direction: 'left'};
-		}
-		
-		t = (xright - ball.x) / ball.dx
-		let yright = ball.y + ball.dy * t;
-		
-		if (0 <= t && t <= dt && this.y <= yright && yright <= this.y + this.h){					
-			return {x: xright, y: yright, t:t, direction: 'right'};
-		}
-		
-		let cTopLeft     = new Circle(this.x         , this.y         , 7);
-		let cTopRight    = new Circle(this.x + this.w, this.y         , 7);
-		let cBottomRight = new Circle(this.x + this.w, this.y + this.h, 7);
-		let cBottomLeft  = new Circle(this.x         , this.y + this.h, 7);
-		let vector = Vector.create(ball);
-		
-		let i = vector.intersectCircle(cTopLeft);
-		if (i && i[0] <= dt && dt <= i[1]){
-			return {... vector.getPointAt(i[0]), ... {direction: 'both', t:i[0]}};
-		}
-		
-		i = vector.intersectCircle(cTopRight);
-		if (i && i[0] <= dt && dt <= i[1]){
-			return {... vector.getPointAt(i[0]), ... {direction: 'both', t:i[0]}};
-		}
-		
-		i = vector.intersectCircle(cBottomRight);
-		if (i && i[0] <= dt && dt <= i[1]){
-			return {... vector.getPointAt(i[0]), ... {direction: 'both', t:i[0]}};
-		}
-		
-		i = vector.intersectCircle(cBottomLeft);
-		if (i && i[0] <= dt && dt <= i[1]){
-			return {... vector.getPointAt(i[0]), ... {direction: 'both', t:i[0]}};
-		}
-		return null;
-	}
-	*/
 	draw(ctx){
-		roundRect(ctx, this.x, this.y, this.w, this.h, this.h / 3, true, true);
+		//roundRect(ctx, this.x, this.y, this.w, this.h, this.h / 3, true, true);
+		
+		roundRect(ctx, this.x, this.y, this.w, this.h, 0, true, true);
 	}
 }
 
@@ -385,7 +286,7 @@ class Game {
 		this.frames = [];
 		this.frames.push({x: 191, y: 1, w: 79, h: 28})
 		
-		this.ball = {x: 20, y:20, w:13, h: 13, dx: 0.25, dy: 0.25, r: 7};
+		this.ball = {x: 20, y:20, w:13, h: 13, dx: 0.25, dy: 0.25, r: 20}; // r: 7
 		
 		this.paddle ={x:100, y: 540, w:200, h:50};
 		this.controller = new MultiController(new Keyboard(), new Touch());
@@ -406,14 +307,22 @@ class Game {
 		
 		this.blocks = [];
 		
-		for(let r = 0; r < 4; ++r){
-			for(let c = 2; c < 6; ++c){
-				//let block = new Block(10 + 98 * c, 50 + 32 * r);
+		//for(let r = 0; r < 4; ++r){
+//			for(let c = 2; c < 6; ++c){
+				//let block = new Block(10 + 98 * c, 50 + 32 * r);				
+				//let block = new Block(-100 + 130 * c, 70 + 62 * r, 96, 30, 7);											
+			//	this.blocks.push(block);
+	//		}
+		//}
+		
+		for(let r = 0; r < 3; ++r){
+			for(let c = 0; c < 4; ++c){				
+				let block = new Block(150 + 140 * c, 70 + 140 * r, 70, 70, this.ball.r);
 				
-				let block = new Block(-100 + 130 * c, 70 + 62 * r);
 				this.blocks.push(block);
 			}
 		}
+		
 	}
 
 	
@@ -460,15 +369,13 @@ class Game {
 		
 		let vector = Vector.create(this.ball);
 		
-		for(let block of this.blocks){			
-			//let collision = block.collides(this.ball, dt,ctx);
-			
+		for(let block of this.blocks){						
 			let collision = block.rect.collides(vector, dt);
 			if (collision){
 				this.drawBall(ctx);
 				
 				ctx.beginPath();
-				ctx.arc(collision.x, collision.y, 7, 0, 2 * Math.PI);
+				ctx.arc(collision.x, collision.y, this.ball.r, 0, 2 * Math.PI);
 				ctx.stroke();
 
 				let ballSpeed = vector.getMagnitude();
@@ -481,31 +388,13 @@ class Game {
 				
 				futureBall.x = collision.pt.x + this.ball.dx * (dt - collision.t);
 				futureBall.y = collision.pt.y + this.ball.dy * (dt - collision.t);
-				
-/*				
-				if (collision.direction == 'top' ||collision.direction == 'bottom'){
-					this.ball.dy = -this.ball.dy;
-					
-					futureBall.y = collision.y + this.ball.dy * (dt - collision.t);
-				}else if (collision.direction == 'left' ||collision.direction == 'right'){					
-					this.ball.dx = -this.ball.dx;
-					
-					futureBall.x = collision.x + this.ball.dx * (dt - collision.t);
-				}else if (collision.direction == 'both'){
-					this.ball.dx = -this.ball.dx;
-					this.ball.dy = -this.ball.dy;
-					
-					futureBall.x = collision.x+this.ball.dx * (dt - collision.t);
-					futureBall.y = collision.y+this.ball.dy * (dt - collision.t);				
-				}
-				*/
 			}
 		}
 		
 
 			
 		
-		let ballRadius = 7;
+		let ballRadius = this.ball.r;
 		
 		let rx = (this.paddle.w) / 2.0 + ballRadius;
 		let ry = (this.paddle.h) / 2.0 + ballRadius;					
@@ -526,7 +415,7 @@ class Game {
 			
 						
 			ctx.beginPath();
-			ctx.arc(intersectionPoint.x, intersectionPoint.y, 7, 0, 2 * Math.PI);			
+			ctx.arc(intersectionPoint.x, intersectionPoint.y, this.ball.r, 0, 2 * Math.PI);
 			ctx.stroke();
 			
 			//Tangent line
@@ -554,15 +443,15 @@ class Game {
 			ctx.stroke();
 					
 			
-			if (intersectionTime[0] <= dt && dt <= intersectionTime[1]){
-		
+			//if (intersectionTime[0] <= dt && dt <= intersectionTime[1]){
+				if (intersectionTime[0] >= 0 && intersectionTime[0] <= dt){
 				let ballSpeed = vector.getMagnitude();
 								
 				this.ball.dx = -ballSpeed * Math.cos(reflectedAngle);
 				this.ball.dy = -ballSpeed * Math.sin(reflectedAngle);
 				
-				this.ball.x = intersectionPoint.x + this.ball.dx;
-				this.ball.y = intersectionPoint.y - this.ball.dy;
+				this.ball.x = intersectionPoint.x + this.ball.dx * (dt - intersectionTime[0]);
+				this.ball.y = intersectionPoint.y + this.ball.dy * (dt - intersectionTime[0]);
 			}else{
 				this.ball.x = futureBall.x;
 				this.ball.y = futureBall.y;
@@ -586,14 +475,14 @@ class Game {
 		let sprite = this.sprites["ball"];
 		//ctx.drawImage(sprite, this.ball.x - this.ball.w/2, this.ball.y - this.ball.h/2, this.ball.w, this.ball.h);
 		
-		var grd = ctx.createRadialGradient(this.ball.x, this.ball.y, 1,   this.ball.x, this.ball.y, 7);
+		var grd = ctx.createRadialGradient(this.ball.x, this.ball.y, 1,   this.ball.x, this.ball.y, this.ball.r);
 		grd.addColorStop(0, "WHITE");
 		grd.addColorStop(0.99, "GRAY");
 		grd.addColorStop(1, "Black");
 		ctx.fillStyle = grd;
 
 		ctx.beginPath();
-		ctx.arc(this.ball.x, this.ball.y, 7, 0, 2 * Math.PI);
+		ctx.arc(this.ball.x, this.ball.y, this.ball.r, 0, 2 * Math.PI);
 		ctx.fill();
 		ctx.stroke();
 	}

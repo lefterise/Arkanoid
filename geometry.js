@@ -54,23 +54,25 @@ class Circle{
 }
 
 class Rectangle{
-	constructor(x, y, w, h){
+	constructor(x, y, w, h, padding){
 		this.x = x;
 		this.y = y;
 		this.w = w;
 		this.h = h;
 		
-		this.cTopLeft     = new Circle(this.x         , this.y         , 7);
-		this.cTopRight    = new Circle(this.x + this.w, this.y         , 7);
-		this.cBottomRight = new Circle(this.x + this.w, this.y + this.h, 7);
-		this.cBottomLeft  = new Circle(this.x         , this.y + this.h, 7);
+		this.padding = padding;
+		
+		this.cTopLeft     = new Circle(this.x         , this.y         , padding);
+		this.cTopRight    = new Circle(this.x + this.w, this.y         , padding);
+		this.cBottomRight = new Circle(this.x + this.w, this.y + this.h, padding);
+		this.cBottomLeft  = new Circle(this.x         , this.y + this.h, padding);
 	}
 	
 	collides(vector, dt){
-		let ybottom = this.y + this.h + 7;		
-		let ytop = this.y - 7;
-		let xleft = this.x - 7;		
-		let xright = this.x + this.w + 7;		
+		let ybottom = this.y + this.h + this.padding;		
+		let ytop = this.y - this.padding;
+		let xleft = this.x - this.padding;		
+		let xright = this.x + this.w + this.padding;
 		
 		
 		let t = (ybottom - vector.y) / vector.dy				
@@ -103,7 +105,7 @@ class Rectangle{
 		}
 		
 		let i = vector.intersectCircle(this.cTopLeft);
-		if (i && i[0] <= dt && dt <= i[1]){
+		if (i && 0 <= i[0] && i[0] <= dt){
 			let intersectionPoint = vector.getPointAt(i[0]);
 			let polarAngle = this.cTopLeft.getPolarAngle(intersectionPoint);
 			let tangent = this.cTopLeft.getTangentAngleAtPolarAngle(polarAngle);
@@ -111,7 +113,7 @@ class Rectangle{
 		}
 		
 		i = vector.intersectCircle(this.cTopRight);
-		if (i && i[0] <= dt && dt <= i[1]){
+		if (i && 0 <= i[0] && i[0] <= dt){
 			let intersectionPoint = vector.getPointAt(i[0]);
 			let polarAngle = this.cTopLeft.getPolarAngle(intersectionPoint);
 			let tangent = this.cTopLeft.getTangentAngleAtPolarAngle(polarAngle);
@@ -119,7 +121,7 @@ class Rectangle{
 		}
 		
 		i = vector.intersectCircle(this.cBottomRight);
-		if (i && i[0] <= dt && dt <= i[1]){
+		if (i && 0 <= i[0] && i[0] <= dt){
 			let intersectionPoint = vector.getPointAt(i[0]);
 			let polarAngle = this.cTopLeft.getPolarAngle(intersectionPoint);
 			let tangent = this.cTopLeft.getTangentAngleAtPolarAngle(polarAngle);
@@ -127,7 +129,7 @@ class Rectangle{
 		}
 		
 		i = vector.intersectCircle(this.cBottomLeft);
-		if (i && i[0] <= dt && dt <= i[1]){
+		if (i && 0 <= i[0] && i[0] <= dt){
 			let intersectionPoint = vector.getPointAt(i[0]);
 			let polarAngle = this.cTopLeft.getPolarAngle(intersectionPoint);
 			let tangent = this.cTopLeft.getTangentAngleAtPolarAngle(polarAngle);
