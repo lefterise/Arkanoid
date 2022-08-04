@@ -254,9 +254,11 @@ class Block{
 		this.y = y;
 		this.w = 96;
 		this.h = 30;
+		
+		this.rect = new Rectangle(x,y,96,30);
 	}
 	
-	
+/*	
   collides(ball, dt, ctx){
 		let ybottom = this.y + this.h + ball.r;		
 		let t = (ybottom - ball.y) / ball.dy				
@@ -266,7 +268,7 @@ class Block{
 		let ytop = this.y - ball.r;
 		let xleft = this.x - ball.r;
 		let xright = this.x + this.w + ball.r;		
-		/*
+		
 		ctx.beginPath();
 		ctx.moveTo(this.x, ybottom);
 		ctx.lineTo(this.x + this.w, ybottom);
@@ -302,8 +304,8 @@ class Block{
 		ctx.beginPath();
 		ctx.arc(this.x, this.y + this.h, 7, 0, 2 * Math.PI);
 		ctx.stroke();
-		*/
-		if (ball.y + ball.dy * dt <= ybottom && ybottom <= ball.y && this.x <= xbottom && xbottom <= this.x + this.w){			
+		
+		if (0 <= t && t <= dt && this.x <= xbottom && xbottom <= this.x + this.w){			
 			return {x: xbottom, y: ybottom, t:t, direction: 'bottom'};
 		}
 		
@@ -311,7 +313,7 @@ class Block{
 		t = (ytop - ball.y) / ball.dy	
 		let xtop = ball.x + ball.dx * t;
 		
-		if (ball.y + ball.dy * dt >= ytop && ytop >= ball.y && this.x <= xtop && xtop <= this.x + this.w){				
+		if (0 <= t && t <= dt && this.x <= xtop && xtop <= this.x + this.w){				
 			return {x: xtop, y: ytop, t:t, direction: 'top'};
 		}
 
@@ -319,17 +321,17 @@ class Block{
 		t = (xleft - ball.x) / ball.dx
 		let yleft = ball.y + ball.dy * t;
 		
-		if (ball.x + ball.dx * dt >= xleft && xleft >= ball.x && this.y <= yleft && yleft <= this.y + this.h){			
+		if (0 <= t && t <= dt && this.y <= yleft && yleft <= this.y + this.h){			
 			return {x: xleft, y: yleft, t:t, direction: 'left'};
 		}
 		
 		t = (xright - ball.x) / ball.dx
 		let yright = ball.y + ball.dy * t;
 		
-		if (ball.x + ball.dx * dt <= xright && xright <= ball.x && this.y <= yright && yright <= this.y + this.h){					
+		if (0 <= t && t <= dt && this.y <= yright && yright <= this.y + this.h){					
 			return {x: xright, y: yright, t:t, direction: 'right'};
 		}
-		/*
+		
 		let cTopLeft     = new Circle(this.x         , this.y         , 7);
 		let cTopRight    = new Circle(this.x + this.w, this.y         , 7);
 		let cBottomRight = new Circle(this.x + this.w, this.y + this.h, 7);
@@ -354,10 +356,10 @@ class Block{
 		i = vector.intersectCircle(cBottomLeft);
 		if (i && i[0] <= dt && dt <= i[1]){
 			return {... vector.getPointAt(i[0]), ... {direction: 'both', t:i[0]}};
-		}*/
+		}
 		return null;
-	}	
-	
+	}
+	*/
 	draw(ctx){
 		roundRect(ctx, this.x, this.y, this.w, this.h, this.h / 3, true, true);
 	}
@@ -456,32 +458,47 @@ class Game {
 			this.ball.dx *= -1;
 		}
 		
+		let vector = Vector.create(this.ball);
+		
 		for(let block of this.blocks){			
-			let collision = block.collides(this.ball, dt,ctx);
+			//let collision = block.collides(this.ball, dt,ctx);
+			
+			let collision = block.rect.collides(vector, dt);
 			if (collision){
 				this.drawBall(ctx);
 				
 				ctx.beginPath();
 				ctx.arc(collision.x, collision.y, 7, 0, 2 * Math.PI);
 				ctx.stroke();
-					
+
+				let ballSpeed = vector.getMagnitude();
+				let incidentAngle = vector.getDirectionAngle();
+				let reflectedAngle = 2 * collision.tangent + Math.PI - incidentAngle;
+
+			
+				this.ball.dx = -ballSpeed * Math.cos(reflectedAngle);
+				this.ball.dy = -ballSpeed * Math.sin(reflectedAngle);
+				
+				futureBall.x = collision.pt.x + this.ball.dx * (dt - collision.t);
+				futureBall.y = collision.pt.y + this.ball.dy * (dt - collision.t);
+				
+/*				
 				if (collision.direction == 'top' ||collision.direction == 'bottom'){
 					this.ball.dy = -this.ball.dy;
 					
-					this.ball.y = collision.y + this.ball.dy * (dt - collision.t);
+					futureBall.y = collision.y + this.ball.dy * (dt - collision.t);
 				}else if (collision.direction == 'left' ||collision.direction == 'right'){					
 					this.ball.dx = -this.ball.dx;
 					
-					this.ball.x = collision.x + this.ball.dx * (dt - collision.t);
+					futureBall.x = collision.x + this.ball.dx * (dt - collision.t);
 				}else if (collision.direction == 'both'){
 					this.ball.dx = -this.ball.dx;
 					this.ball.dy = -this.ball.dy;
 					
-					this.ball.x = collision.x+this.ball.dx * (dt - collision.t);
-					this.ball.y = collision.y+this.ball.dy * (dt - collision.t);
-					
-
+					futureBall.x = collision.x+this.ball.dx * (dt - collision.t);
+					futureBall.y = collision.y+this.ball.dy * (dt - collision.t);				
 				}
+				*/
 			}
 		}
 		
@@ -494,7 +511,7 @@ class Game {
 		let ry = (this.paddle.h) / 2.0 + ballRadius;					
 		
 		
-		let vector = Vector.create(this.ball);
+		
 		let ellip = new Ellipse(this.paddle.x, this.paddle.y, rx, ry);
 		let intersectionTime = vector.intersectEllipse(ellip);
 		

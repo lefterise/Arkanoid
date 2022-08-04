@@ -42,6 +42,15 @@ class Circle{
 		this.y = y;
 		this.r = r;
 	}
+	
+	getPolarAngle(pt){
+		let theta  = Math.atan2(pt.y - this.y, pt.x - this.x);	
+		return theta;		
+	}
+	
+	getTangentAngleAtPolarAngle(phi){
+		return Math.atan2(Math.cos(phi), - Math.sin(phi));		
+	}
 }
 
 class Rectangle{
@@ -50,7 +59,82 @@ class Rectangle{
 		this.y = y;
 		this.w = w;
 		this.h = h;
-	}	
+		
+		this.cTopLeft     = new Circle(this.x         , this.y         , 7);
+		this.cTopRight    = new Circle(this.x + this.w, this.y         , 7);
+		this.cBottomRight = new Circle(this.x + this.w, this.y + this.h, 7);
+		this.cBottomLeft  = new Circle(this.x         , this.y + this.h, 7);
+	}
+	
+	collides(vector, dt){
+		let ybottom = this.y + this.h + 7;		
+		let ytop = this.y - 7;
+		let xleft = this.x - 7;		
+		let xright = this.x + this.w + 7;		
+		
+		
+		let t = (ybottom - vector.y) / vector.dy				
+		let xbottom = vector.x + vector.dx * t;		
+		
+		if (0 <= t && t <= dt && this.x <= xbottom && xbottom <= this.x + this.w){			
+			return {t:t, pt: {x: xbottom, y: ybottom}, tangent: Math.PI};
+		}		
+		
+		t = (ytop - vector.y) / vector.dy	
+		let xtop = vector.x + vector.dx * t;
+		
+		if (0 <= t && t <= dt && this.x <= xtop && xtop <= this.x + this.w){				
+			return {t:t, pt: {x: xtop, y: ytop}, tangent: Math.PI};
+		}
+
+		
+		t = (xleft - vector.x) / vector.dx
+		let yleft = vector.y + vector.dy * t;
+		
+		if (0 <= t && t <= dt && this.y <= yleft && yleft <= this.y + this.h){			
+			return {t:t, pt: {x: xleft, y: yleft}, tangent: Math.PI/2};
+		}
+		
+		t = (xright - vector.x) / vector.dx
+		let yright = vector.y + vector.dy * t;
+		
+		if (0 <= t && t <= dt && this.y <= yright && yright <= this.y + this.h){					
+			return {t:t, pt: {x: xright, y: yright}, tangent: Math.PI/2};
+		}
+		
+		let i = vector.intersectCircle(this.cTopLeft);
+		if (i && i[0] <= dt && dt <= i[1]){
+			let intersectionPoint = vector.getPointAt(i[0]);
+			let polarAngle = this.cTopLeft.getPolarAngle(intersectionPoint);
+			let tangent = this.cTopLeft.getTangentAngleAtPolarAngle(polarAngle);
+			return {t:i[0], pt: intersectionPoint, tangent: tangent};
+		}
+		
+		i = vector.intersectCircle(this.cTopRight);
+		if (i && i[0] <= dt && dt <= i[1]){
+			let intersectionPoint = vector.getPointAt(i[0]);
+			let polarAngle = this.cTopLeft.getPolarAngle(intersectionPoint);
+			let tangent = this.cTopLeft.getTangentAngleAtPolarAngle(polarAngle);
+			return {t:i[0], pt: intersectionPoint, tangent: tangent};
+		}
+		
+		i = vector.intersectCircle(this.cBottomRight);
+		if (i && i[0] <= dt && dt <= i[1]){
+			let intersectionPoint = vector.getPointAt(i[0]);
+			let polarAngle = this.cTopLeft.getPolarAngle(intersectionPoint);
+			let tangent = this.cTopLeft.getTangentAngleAtPolarAngle(polarAngle);
+			return {t:i[0], pt: intersectionPoint, tangent: tangent};
+		}
+		
+		i = vector.intersectCircle(this.cBottomLeft);
+		if (i && i[0] <= dt && dt <= i[1]){
+			let intersectionPoint = vector.getPointAt(i[0]);
+			let polarAngle = this.cTopLeft.getPolarAngle(intersectionPoint);
+			let tangent = this.cTopLeft.getTangentAngleAtPolarAngle(polarAngle);
+			return {t:i[0], pt: intersectionPoint, tangent: tangent};
+		}
+		return null;
+	}
 }
 
 class Vector{
