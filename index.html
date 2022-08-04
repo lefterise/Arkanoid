@@ -329,7 +329,7 @@ class Block{
 		if (ball.x + ball.dx * dt <= xright && xright <= ball.x && this.y <= yright && yright <= this.y + this.h){					
 			return {x: xright, y: yright, t:t, direction: 'right'};
 		}
-		
+		/*
 		let cTopLeft     = new Circle(this.x         , this.y         , 7);
 		let cTopRight    = new Circle(this.x + this.w, this.y         , 7);
 		let cBottomRight = new Circle(this.x + this.w, this.y + this.h, 7);
@@ -354,7 +354,7 @@ class Block{
 		i = vector.intersectCircle(cBottomLeft);
 		if (i && i[0] <= dt && dt <= i[1]){
 			return {... vector.getPointAt(i[0]), ... {direction: 'both', t:i[0]}};
-		}
+		}*/
 		return null;
 	}	
 	
