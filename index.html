@@ -266,7 +266,7 @@ class Block{
 		let ytop = this.y - ball.r;
 		let xleft = this.x - ball.r;
 		let xright = this.x + this.w + ball.r;		
-		
+		/*
 		ctx.beginPath();
 		ctx.moveTo(this.x, ybottom);
 		ctx.lineTo(this.x + this.w, ybottom);
@@ -302,8 +302,8 @@ class Block{
 		ctx.beginPath();
 		ctx.arc(this.x, this.y + this.h, 7, 0, 2 * Math.PI);
 		ctx.stroke();
-		
-		if (ball.y + ball.dy * dt <= ybottom && ybottom <= ball.y && this.x < xbottom && xbottom < this.x + this.w){			
+		*/
+		if (ball.y + ball.dy * dt <= ybottom && ybottom <= ball.y && this.x <= xbottom && xbottom <= this.x + this.w){			
 			return {x: xbottom, y: ybottom, t:t, direction: 'bottom'};
 		}
 		
@@ -311,7 +311,7 @@ class Block{
 		t = (ytop - ball.y) / ball.dy	
 		let xtop = ball.x + ball.dx * t;
 		
-		if (ball.y + ball.dy * dt >= ytop && ytop >= ball.y && this.x < xtop && xtop < this.x + this.w){				
+		if (ball.y + ball.dy * dt >= ytop && ytop >= ball.y && this.x <= xtop && xtop <= this.x + this.w){				
 			return {x: xtop, y: ytop, t:t, direction: 'top'};
 		}
 
@@ -319,14 +319,14 @@ class Block{
 		t = (xleft - ball.x) / ball.dx
 		let yleft = ball.y + ball.dy * t;
 		
-		if (ball.x + ball.dx * dt >= xleft && xleft >= ball.x && this.y < yleft && yleft < this.y + this.h){			
+		if (ball.x + ball.dx * dt >= xleft && xleft >= ball.x && this.y <= yleft && yleft <= this.y + this.h){			
 			return {x: xleft, y: yleft, t:t, direction: 'left'};
 		}
 		
 		t = (xright - ball.x) / ball.dx
 		let yright = ball.y + ball.dy * t;
 		
-		if (ball.x + ball.dx * dt <= xright && xright <= ball.x && this.y < yright && yright < this.y + this.h){					
+		if (ball.x + ball.dx * dt <= xright && xright <= ball.x && this.y <= yright && yright <= this.y + this.h){					
 			return {x: xright, y: yright, t:t, direction: 'right'};
 		}
 		
@@ -337,22 +337,22 @@ class Block{
 		let vector = Vector.create(ball);
 		
 		let i = vector.intersectCircle(cTopLeft);
-		if (i && i[0] < dt && dt < i[1]){
+		if (i && i[0] <= dt && dt <= i[1]){
 			return {... vector.getPointAt(i[0]), ... {direction: 'both', t:i[0]}};
 		}
 		
 		i = vector.intersectCircle(cTopRight);
-		if (i && i[0] < dt && dt < i[1]){
+		if (i && i[0] <= dt && dt <= i[1]){
 			return {... vector.getPointAt(i[0]), ... {direction: 'both', t:i[0]}};
 		}
 		
 		i = vector.intersectCircle(cBottomRight);
-		if (i && i[0] < dt && dt < i[1]){
+		if (i && i[0] <= dt && dt <= i[1]){
 			return {... vector.getPointAt(i[0]), ... {direction: 'both', t:i[0]}};
 		}
 		
 		i = vector.intersectCircle(cBottomLeft);
-		if (i && i[0] < dt && dt < i[1]){
+		if (i && i[0] <= dt && dt <= i[1]){
 			return {... vector.getPointAt(i[0]), ... {direction: 'both', t:i[0]}};
 		}
 		return null;
@@ -537,7 +537,7 @@ class Game {
 			ctx.stroke();
 					
 			
-			if (intersectionTime[0] < dt && dt < intersectionTime[1]){
+			if (intersectionTime[0] <= dt && dt <= intersectionTime[1]){
 		
 				let ballSpeed = vector.getMagnitude();
 								
