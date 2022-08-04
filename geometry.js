@@ -2,8 +2,9 @@ function solveQuadratic(a,b,c){
 	let d = b**2 - 4 * a * c;
 	if (d < 0)
 		return null;
-	let s1 = (-b + Math.sqrt(d)) / (2 * a);
-	let s2 = (-b - Math.sqrt(d)) / (2 * a);
+	let rootd = Math.sqrt(d);
+	let s1 = (-b + rootd) / (2 * a);
+	let s2 = (-b - rootd) / (2 * a);
 	return s1 < s2 ? [s1, s2] : [s2, s1];
 }
 
@@ -22,7 +23,7 @@ class Ellipse{
 	getPolarAngle(pt){
 		let theta  = Math.atan2(pt.y - this.y, pt.x - this.x);
 		let phi    = Math.atan2(this.a * Math.sin(theta), this.b * Math.cos(theta));
-		let phiAlt = Math.atan(this.a/this.b * Math.tan(theta)); //I wonder why doc says it's b/a..
+		//let phiAlt = Math.atan(this.a/this.b * Math.tan(theta)); //I wonder why doc says it's b/a..
 		return phi;
 	}
 	
