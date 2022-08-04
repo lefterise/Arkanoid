@@ -256,38 +256,106 @@ class Block{
 		this.h = 30;
 	}
 	
-
-	collides(ball, dt){
-		let m = (ball.dy) / (ball.dx);		
-		let c = ball.y - m * ball.x;
-		
+	
+  collides(ball, dt, ctx){
 		let ybottom = this.y + this.h + ball.r;		
-		let xbottom = (ybottom - c) / m;
+		let t = (ybottom - ball.y) / ball.dy				
+		let xbottom = ball.x + ball.dx * t;
 		
-		if (ball.y + ball.dy * dt <= ybottom && ybottom <= ball.y && this.x < xbottom && xbottom < this.x + this.w){
-			return {x: xbottom, y: ybottom, direction: 'bottom'};
-		}
 		
-		let ytop = this.y - ball.r;		
-		let xtop = (ytop - c) / m;
-		
-		if (ball.y + ball.dy * dt >= ytop && ytop >= ball.y && this.x < xtop && xtop < this.x + this.w){
-			return {x: xtop, y: ytop, direction: 'top'};
-		}
-
-		let xleft = this.x - ball.r;		
-		let yleft = m * xleft + c;
-		
-		if (ball.x + ball.dx * dt >= xleft && xleft >= ball.x && this.y < yleft && yleft < this.y + this.h){
-			return {x: xleft, y: yleft, direction: 'left'};
-		}
-
+		let ytop = this.y - ball.r;
+		let xleft = this.x - ball.r;
 		let xright = this.x + this.w + ball.r;		
-		let yright = m * xright + c;
 		
-		if (ball.x + ball.dx * dt <= xright && xright <= ball.x && this.y < yright && yright < this.y + this.h){
-			return {x: xright, y: yright, direction: 'right'};
+		ctx.beginPath();
+		ctx.moveTo(this.x, ybottom);
+		ctx.lineTo(this.x + this.w, ybottom);
+		ctx.stroke();
+		
+		ctx.beginPath();
+		ctx.moveTo(this.x, ytop);
+		ctx.lineTo(this.x + this.w, ytop);
+		ctx.stroke();
+		
+		ctx.beginPath();
+		ctx.moveTo(xleft, this.y);
+		ctx.lineTo(xleft, this.y + this.h);
+		ctx.stroke();
+		
+		ctx.beginPath();
+		ctx.moveTo(xright, this.y);
+		ctx.lineTo(xright, this.y + this.h);
+		ctx.stroke();
+		
+		ctx.beginPath();
+		ctx.arc(this.x, this.y, 7, 0, 2 * Math.PI);
+		ctx.stroke();
+		
+		ctx.beginPath();
+		ctx.arc(this.x + this.w, this.y, 7, 0, 2 * Math.PI);
+		ctx.stroke();
+		
+		ctx.beginPath();
+		ctx.arc(this.x + this.w, this.y + this.h, 7, 0, 2 * Math.PI);
+		ctx.stroke();
+		
+		ctx.beginPath();
+		ctx.arc(this.x, this.y + this.h, 7, 0, 2 * Math.PI);
+		ctx.stroke();
+		
+		if (ball.y + ball.dy * dt <= ybottom && ybottom <= ball.y && this.x < xbottom && xbottom < this.x + this.w){			
+			return {x: xbottom, y: ybottom, t:t, direction: 'bottom'};
 		}
+		
+		
+		t = (ytop - ball.y) / ball.dy	
+		let xtop = ball.x + ball.dx * t;
+		
+		if (ball.y + ball.dy * dt >= ytop && ytop >= ball.y && this.x < xtop && xtop < this.x + this.w){				
+			return {x: xtop, y: ytop, t:t, direction: 'top'};
+		}
+
+		
+		t = (xleft - ball.x) / ball.dx
+		let yleft = ball.y + ball.dy * t;
+		
+		if (ball.x + ball.dx * dt >= xleft && xleft >= ball.x && this.y < yleft && yleft < this.y + this.h){			
+			return {x: xleft, y: yleft, t:t, direction: 'left'};
+		}
+		
+		t = (xright - ball.x) / ball.dx
+		let yright = ball.y + ball.dy * t;
+		
+		if (ball.x + ball.dx * dt <= xright && xright <= ball.x && this.y < yright && yright < this.y + this.h){					
+			return {x: xright, y: yright, t:t, direction: 'right'};
+		}
+		
+		let cTopLeft     = new Circle(this.x         , this.y         , 7);
+		let cTopRight    = new Circle(this.x + this.w, this.y         , 7);
+		let cBottomRight = new Circle(this.x + this.w, this.y + this.h, 7);
+		let cBottomLeft  = new Circle(this.x         , this.y + this.h, 7);
+		let vector = Vector.create(ball);
+		
+		let i = vector.intersectCircle(cTopLeft);
+		if (i && i[0] < dt && dt < i[1]){
+			return {... vector.getPointAt(i[0]), ... {direction: 'both', t:i[0]}};
+		}
+		
+		i = vector.intersectCircle(cTopRight);
+		if (i && i[0] < dt && dt < i[1]){
+			return {... vector.getPointAt(i[0]), ... {direction: 'both', t:i[0]}};
+		}
+		
+		i = vector.intersectCircle(cBottomRight);
+		if (i && i[0] < dt && dt < i[1]){
+			return {... vector.getPointAt(i[0]), ... {direction: 'both', t:i[0]}};
+		}
+		
+		i = vector.intersectCircle(cBottomLeft);
+		if (i && i[0] < dt && dt < i[1]){
+			return {... vector.getPointAt(i[0]), ... {direction: 'both', t:i[0]}};
+		}
+		return null;
 	}	
 	
 	draw(ctx){
@@ -338,7 +406,9 @@ class Game {
 		
 		for(let r = 0; r < 4; ++r){
 			for(let c = 2; c < 6; ++c){
-				let block = new Block(10 + 98 * c, 50 + 32 * r);
+				//let block = new Block(10 + 98 * c, 50 + 32 * r);
+				
+				let block = new Block(-100 + 130 * c, 70 + 62 * r);
 				this.blocks.push(block);
 			}
 		}
@@ -387,18 +457,30 @@ class Game {
 		}
 		
 		for(let block of this.blocks){			
-			let collision = block.collides(this.ball, dt);
+			let collision = block.collides(this.ball, dt,ctx);
 			if (collision){
 				this.drawBall(ctx);
 				
+				ctx.beginPath();
+				ctx.arc(collision.x, collision.y, 7, 0, 2 * Math.PI);
+				ctx.stroke();
+					
 				if (collision.direction == 'top' ||collision.direction == 'bottom'){
-					this.ball.x = collision.x-this.ball.dy;
-					this.ball.y = collision.y-this.ball.dy;
 					this.ball.dy = -this.ball.dy;
-				}else {
-					this.ball.x = collision.x-this.ball.dx;
-					this.ball.y = collision.y-this.ball.dx;
+					
+					this.ball.y = collision.y + this.ball.dy * (dt - collision.t);
+				}else if (collision.direction == 'left' ||collision.direction == 'right'){					
 					this.ball.dx = -this.ball.dx;
+					
+					this.ball.x = collision.x + this.ball.dx * (dt - collision.t);
+				}else if (collision.direction == 'both'){
+					this.ball.dx = -this.ball.dx;
+					this.ball.dy = -this.ball.dy;
+					
+					this.ball.x = collision.x+this.ball.dx * (dt - collision.t);
+					this.ball.y = collision.y+this.ball.dy * (dt - collision.t);
+					
+
 				}
 			}
 		}
