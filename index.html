@@ -266,6 +266,76 @@ class Block{
 	}
 }
 
+class LineTrace{
+	constructor(x1,y1, x2,y2, duration){
+		this.x1 = x1;
+		this.y1 = y1;		
+		this.x2 = x2;
+		this.y2 = y2;
+		this.duration = duration;
+	}
+	
+	update(dt){
+		this.duration -= dt;
+	}
+	
+	draw(ctx){
+		ctx.beginPath();
+		ctx.moveTo(this.x1, this.y1);
+		ctx.lineTo(this.x2, this.y2);
+		ctx.stroke();
+	}
+}
+
+class CircleTrace{
+	constructor(x,y, r, duration){
+		this.x = x;
+		this.y = y;		
+		this.r = r;
+		this.duration = duration;
+	}
+	
+	update(dt){
+		this.duration -= dt;
+	}
+	
+	draw(ctx){
+		ctx.beginPath();
+		ctx.arc(this.x, this.y, this.r, 0, 2 * Math.PI);
+		ctx.stroke();
+	}
+}
+
+class Traces{
+	constructor(){
+		this.traces = [];
+	}
+	
+	addLine(x1,y1, x2,y2, duration){
+		let trace = new LineTrace(x1,y1, x2,y2, duration);
+		this.traces.push(trace);
+	}
+	
+	addCircle(x,y, r, duration){
+		let trace = new CircleTrace(x,y, r, duration);
+		this.traces.push(trace);
+	}
+	
+	update(dt){
+		for (let trace of this.traces){
+			trace.update(dt);
+		}
+		
+		this.traces = this.traces.filter( t=> t.duration > 0);
+	}
+	
+	draw(ctx){
+		for (let trace of this.traces){
+			trace.draw(ctx);
+		}
+	}	
+}
+
 class Game {
 
 	setSprites(sprites){
@@ -286,11 +356,13 @@ class Game {
 		this.frames = [];
 		this.frames.push({x: 191, y: 1, w: 79, h: 28})
 		
-		this.ball = {x: 20, y:20, w:13, h: 13, dx: 0.25, dy: 0.25, r: 20}; // r: 7
+		this.ball = {x: 20, y:20, w:13, h: 13, dx: 0.25, dy: 0.25, r: 30}; // r: 7
 		
 		this.paddle ={x:100, y: 540, w:200, h:50};
 		this.controller = new MultiController(new Keyboard(), new Touch());
 		
+		
+		this.traces = new Traces();
 		
 		canvas.addEventListener('mousemove', (e)=>{
 			if (e.buttons == 0) return;
@@ -315,9 +387,9 @@ class Game {
 	//		}
 		//}
 		
-		for(let r = 0; r < 3; ++r){
-			for(let c = 0; c < 4; ++c){				
-				let block = new Block(150 + 140 * c, 70 + 140 * r, 70, 70, this.ball.r);
+		for(let r = 0; r < 2; ++r){
+			for(let c = 0; c < 3; ++c){				
+				let block = new Block(150 + 170 * c, 70 + 170 * r, 70, 70, this.ball.r);
 				
 				this.blocks.push(block);
 			}
@@ -344,6 +416,8 @@ class Game {
 	}
 		
 	updateBall(dt, ctx){
+		this.traces.update(dt);
+	
 		let futureBall = {x: this.ball.x + this.ball.dx * dt,
 					      y: this.ball.y + this.ball.dy * dt};
 		
@@ -370,13 +444,21 @@ class Game {
 		let vector = Vector.create(this.ball);
 		
 		for(let block of this.blocks){						
-			let collision = block.rect.collides(vector, dt);
+			let collision = block.rect.collides(vector, dt, ctx);
 			if (collision){
 				this.drawBall(ctx);
 				
-				ctx.beginPath();
-				ctx.arc(collision.x, collision.y, this.ball.r, 0, 2 * Math.PI);
-				ctx.stroke();
+				/*
+				this.traces.addCircle(collision.pt.x, collision.pt.y, 2, 1000);				
+				
+				this.traces.addLine(
+					collision.pt.x + 30 * Math.cos(collision.tangent), collision.pt.y + 30 * Math.sin(collision.tangent),
+					collision.pt.x - 30 * Math.cos(collision.tangent), collision.pt.y - 30 * Math.sin(collision.tangent),
+					1000
+				);
+				
+				this.traces.draw(ctx);
+				*/
 
 				let ballSpeed = vector.getMagnitude();
 				let incidentAngle = vector.getDirectionAngle();
@@ -390,7 +472,7 @@ class Game {
 				futureBall.y = collision.pt.y + this.ball.dy * (dt - collision.t);
 			}
 		}
-		
+		this.traces.draw(ctx);
 
 			
 		
@@ -482,9 +564,16 @@ class Game {
 		ctx.fillStyle = grd;
 
 		ctx.beginPath();
-		ctx.arc(this.ball.x, this.ball.y, this.ball.r, 0, 2 * Math.PI);
+		ctx.arc(this.ball.x, this.ball.y, this.ball.r, 0, 2 * Math.PI);		
+		//ctx.strokeStyle = '#00558822';
 		ctx.fill();
 		ctx.stroke();
+		
+		//ctx.strokeStyle = '#000000FF';
+		
+		//ctx.beginPath();
+		//ctx.arc(this.ball.x, this.ball.y, 1, 0, 2 * Math.PI);		
+		//ctx.stroke();
 	}
 	
 	drawPaddle(ctx){
