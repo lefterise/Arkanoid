@@ -486,68 +486,71 @@ class Game {
 		let ellip = new Ellipse(this.paddle.x, this.paddle.y, rx, ry);
 		let intersectionTime = vector.intersectEllipse(ellip);
 		
-		if (intersectionTime && intersectionTime[0] > 0){			
+		if (intersectionTime){
 			let intersectionPoint = vector.getPointAt(intersectionTime[0]);
 			let polarAngle = ellip.getPolarAngle(intersectionPoint);
-			let tangentAngle = ellip.getTangentAngleAtPolarAngle(polarAngle);
-						
-			
+			let tangentAngle = ellip.getTangentAngleAtPolarAngle(polarAngle);									
 			let incidentAngle = vector.getDirectionAngle();
 			let reflectedAngle = 2 * tangentAngle + Math.PI - incidentAngle;
-			
-						
-			ctx.beginPath();
-			ctx.arc(intersectionPoint.x, intersectionPoint.y, this.ball.r, 0, 2 * Math.PI);
-			ctx.stroke();
-			
-			//Tangent line
-			ctx.beginPath();
-			ctx.moveTo(intersectionPoint.x + 50 * Math.cos(tangentAngle), intersectionPoint.y + 50 * Math.sin(tangentAngle));
-			ctx.lineTo(intersectionPoint.x - 50 * Math.cos(tangentAngle), intersectionPoint.y - 50 * Math.sin(tangentAngle));
-			ctx.stroke();
-			
-			//Normal
-			ctx.beginPath();
-			ctx.moveTo(intersectionPoint.x, intersectionPoint.y);
-			ctx.lineTo(intersectionPoint.x - 50 * Math.cos(tangentAngle + Math.PI / 2.0), intersectionPoint.y - 50 * Math.sin(tangentAngle + Math.PI / 2.0));
-			ctx.stroke();
-			
-			//Projection line
-			ctx.beginPath();
-			ctx.moveTo(this.ball.x, this.ball.y);
-			ctx.lineTo(intersectionPoint.x, intersectionPoint.y);
-			ctx.stroke();			
+				
+			if (intersectionTime[0] > 0){ // if ball will intersect the ellipse at some time in the future
+				ctx.beginPath();
+				ctx.arc(intersectionPoint.x, intersectionPoint.y, this.ball.r, 0, 2 * Math.PI);
+				ctx.stroke();
+				
+				//Tangent line
+				ctx.beginPath();
+				ctx.moveTo(intersectionPoint.x + 50 * Math.cos(tangentAngle), intersectionPoint.y + 50 * Math.sin(tangentAngle));
+				ctx.lineTo(intersectionPoint.x - 50 * Math.cos(tangentAngle), intersectionPoint.y - 50 * Math.sin(tangentAngle));
+				ctx.stroke();
+				
+				//Normal
+				ctx.beginPath();
+				ctx.moveTo(intersectionPoint.x, intersectionPoint.y);
+				ctx.lineTo(intersectionPoint.x - 50 * Math.cos(tangentAngle + Math.PI / 2.0), intersectionPoint.y - 50 * Math.sin(tangentAngle + Math.PI / 2.0));
+				ctx.stroke();
+				
+				//Projection line
+				ctx.beginPath();
+				ctx.moveTo(this.ball.x, this.ball.y);
+				ctx.lineTo(intersectionPoint.x, intersectionPoint.y);
+				ctx.stroke();			
 
-			//reflection
-			ctx.beginPath();
-			ctx.moveTo(intersectionPoint.x, intersectionPoint.y);
-			ctx.lineTo(intersectionPoint.x - 100 * Math.cos(reflectedAngle), intersectionPoint.y - 100 * Math.sin(reflectedAngle));
-			ctx.stroke();
-					
+				//reflection
+				ctx.beginPath();
+				ctx.moveTo(intersectionPoint.x, intersectionPoint.y);
+				ctx.lineTo(intersectionPoint.x - 100 * Math.cos(reflectedAngle), intersectionPoint.y - 100 * Math.sin(reflectedAngle));
+				ctx.stroke();
+			}
+		
+			if (intersectionTime[0] < 0 && intersectionTime[1] > 0){ //ball already inside paddle
+				let closestBorder = Math.abs(intersectionTime[0]) < Math.abs(intersectionTime[1]) ? intersectionTime[0] : intersectionTime[1];
+				intersectionPoint = vector.getPointAt(closestBorder);
+				polarAngle = ellip.getPolarAngle(intersectionPoint);
+				tangentAngle = ellip.getTangentAngleAtPolarAngle(polarAngle);									
+				incidentAngle = vector.getDirectionAngle();
+				reflectedAngle = 2 * tangentAngle + Math.PI - incidentAngle;
 			
-			//if (intersectionTime[0] <= dt && dt <= intersectionTime[1]){
-				if (intersectionTime[0] >= 0 && intersectionTime[0] <= dt){
 				let ballSpeed = vector.getMagnitude();
-								
+							
 				this.ball.dx = -ballSpeed * Math.cos(reflectedAngle);
 				this.ball.dy = -ballSpeed * Math.sin(reflectedAngle);
-				
+			
+				this.ball.x = intersectionPoint.x + this.ball.dxd;
+				this.ball.y = intersectionPoint.y + this.ball.dy;
+			} else if (intersectionTime[0] > 0 && intersectionTime[0] <= dt){ //ball has hit paddle in this time slot
+				let ballSpeed = vector.getMagnitude();
+							
+				this.ball.dx = -ballSpeed * Math.cos(reflectedAngle);
+				this.ball.dy = -ballSpeed * Math.sin(reflectedAngle);
+			
 				this.ball.x = intersectionPoint.x + this.ball.dx * (dt - intersectionTime[0]);
 				this.ball.y = intersectionPoint.y + this.ball.dy * (dt - intersectionTime[0]);
 			}else{
 				this.ball.x = futureBall.x;
 				this.ball.y = futureBall.y;
 			}
-			
-		}else{
-			/*
-			ctx.beginPath();
-			ctx.moveTo(this.ball.x, this.ball.y);
-			ctx.setLineDash([5, 15]);
-			ctx.lineTo(this.ball.x + this.ball.dx * 10000, this.ball.y + this.ball.dy * 10000);
-			ctx.stroke();
-			ctx.setLineDash([]);
-			*/
+		}else {
 			this.ball.x = futureBall.x;
 			this.ball.y = futureBall.y;
 		}
