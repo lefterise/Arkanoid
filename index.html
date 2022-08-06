@@ -356,7 +356,7 @@ class Game {
 		this.frames = [];
 		this.frames.push({x: 191, y: 1, w: 79, h: 28})
 		
-		this.ball = {x: 20, y:20, w:13, h: 13, dx: 0.25, dy: 0.25, r: 30}; // r: 7
+		this.ball = {x: 20, y:20, dx: 0.25, dy: 0.25, r: 7}; // r: 30
 		
 		this.paddle ={x:100, y: 540, w:200, h:50};
 		this.controller = new MultiController(new Keyboard(), new Touch());
@@ -421,23 +421,23 @@ class Game {
 		let futureBall = {x: this.ball.x + this.ball.dx * dt,
 					      y: this.ball.y + this.ball.dy * dt};
 		
-		if (futureBall.y + this.ball.h / 2.0 > 600){
-			futureBall.y = 600 - this.ball.h / 2.0;
+		if (futureBall.y + this.ball.r / 2.0 > 600){
+			futureBall.y = 600 - this.ball.r / 2.0;
 			this.ball.dy *= -1;
 		}
 		
-		if (futureBall.y < this.ball.h / 2.0){
-			futureBall.y = this.ball.h / 2.0;
+		if (futureBall.y < this.ball.r / 2.0){
+			futureBall.y = this.ball.r / 2.0;
 			this.ball.dy *= -1;
 		}
 		
-		if (futureBall.x + this.ball.w / 2.0 > 800){
-			futureBall.x = 800 - this.ball.w / 2.0;
+		if (futureBall.x + this.ball.r / 2.0 > 800){
+			futureBall.x = 800 - this.ball.r / 2.0;
 			this.ball.dx *= -1;
 		}
 		
-		if (futureBall.x < this.ball.w / 2.0){
-			futureBall.x = this.ball.w / 2.0;
+		if (futureBall.x < this.ball.r / 2.0){
+			futureBall.x = this.ball.r / 2.0;
 			this.ball.dx *= -1;
 		}
 		
@@ -536,7 +536,7 @@ class Game {
 				this.ball.dx = -ballSpeed * Math.cos(reflectedAngle);
 				this.ball.dy = -ballSpeed * Math.sin(reflectedAngle);
 			
-				this.ball.x = intersectionPoint.x + this.ball.dxd;
+				this.ball.x = intersectionPoint.x + this.ball.dx;
 				this.ball.y = intersectionPoint.y + this.ball.dy;
 			} else if (intersectionTime[0] > 0 && intersectionTime[0] <= dt){ //ball has hit paddle in this time slot
 				let ballSpeed = vector.getMagnitude();
