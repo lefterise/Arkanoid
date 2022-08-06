@@ -254,15 +254,15 @@ class Block{
 		this.y = y;
 		this.w = w;
 		this.h = h;
-		
+		this.hitpoints = 1;
+	
 		this.rect = new Rectangle(x,y,w,h, padding);
 	}
 	
 
 	draw(ctx){
-		//roundRect(ctx, this.x, this.y, this.w, this.h, this.h / 3, true, true);
-		
-		roundRect(ctx, this.x, this.y, this.w, this.h, 0, true, true);
+		roundRect(ctx, this.x, this.y, this.w, this.h, this.h / 3, true, true);		
+		//roundRect(ctx, this.x, this.y, this.w, this.h, 0, true, true);
 	}
 }
 
@@ -356,9 +356,9 @@ class Game {
 		this.frames = [];
 		this.frames.push({x: 191, y: 1, w: 79, h: 28})
 		
-		this.ball = {x: 20, y:20, dx: 0.25, dy: 0.25, r: 7}; // r: 30
+		this.ball = {x: 20, y:200, dx: 0.25, dy: 0.25, r: 7}; // r: 30
 		
-		this.paddle ={x:100, y: 540, w:200, h:50};
+		this.paddle ={x:410, y: 540, w:200, h:50};
 		this.controller = new MultiController(new Keyboard(), new Touch());
 		
 		
@@ -379,24 +379,18 @@ class Game {
 		
 		this.blocks = [];
 		
-		//for(let r = 0; r < 4; ++r){
-//			for(let c = 2; c < 6; ++c){
-				//let block = new Block(10 + 98 * c, 50 + 32 * r);				
-				//let block = new Block(-100 + 130 * c, 70 + 62 * r, 96, 30, 7);											
-			//	this.blocks.push(block);
-	//		}
-		//}
-		
-		for(let r = 0; r < 2; ++r){
-			for(let c = 0; c < 3; ++c){				
-				let block = new Block(150 + 170 * c, 70 + 170 * r, 70, 70, this.ball.r);
-				
+		this.loadLevel();
+	}
+
+	loadLevel(){
+		for(let r = 0; r < 4; ++r){
+			for(let c = 0; c < 7; ++c){
+				let block = new Block(50 + 98 * c, 50 + 32 * r, 96, 30, this.ball.r);
 				this.blocks.push(block);
 			}
 		}
-		
+		this.ball = {x: 20, y:200, dx: 0.25, dy: 0.25, r: 7}; // r: 30
 	}
-
 	
 	
 	checkController(time){
@@ -470,8 +464,17 @@ class Game {
 				
 				futureBall.x = collision.pt.x + this.ball.dx * (dt - collision.t);
 				futureBall.y = collision.pt.y + this.ball.dy * (dt - collision.t);
+				
+				block.hitpoints--;
 			}
 		}
+		
+		this.blocks = this.blocks.filter(b => b.hitpoints > 0);
+		if (this.blocks.length == 0){
+			this.loadLevel();
+			return;
+		}
+		
 		this.traces.draw(ctx);
 
 			
