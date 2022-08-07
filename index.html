@@ -7,46 +7,30 @@ html, body {
 }
 </style>
 <script src="geometry.js"></script>
+<script src="graphics.js"></script>
+<script src="input.js"></script>
+<script src="traces.js"></script>
 <script>
 
-function roundRect(
-	  ctx,
-	  x,
-	  y,
-	  width,
-	  height,
-	  radius = 5,
-	  fill = false,
-	  stroke = true
-) {
-	  if (typeof radius === 'number') {
-		radius = {tl: radius, tr: radius, br: radius, bl: radius};
-	  } else {
-		radius = {...{tl: 0, tr: 0, br: 0, bl: 0}, ...radius};
-	  }
-	  ctx.beginPath();
-	  ctx.moveTo(x + radius.tl, y);
-	  ctx.lineTo(x + width - radius.tr, y);
-	  ctx.quadraticCurveTo(x + width, y, x + width, y + radius.tr);
-	  ctx.lineTo(x + width, y + height - radius.br);
-	  ctx.quadraticCurveTo(x + width, y + height, x + width - radius.br, y + height);
-	  ctx.lineTo(x + radius.bl, y + height);
-	  ctx.quadraticCurveTo(x, y + height, x, y + height - radius.bl);
-	  ctx.lineTo(x, y + radius.tl);
-	  ctx.quadraticCurveTo(x, y, x + radius.tl, y);
-	  ctx.closePath();
-	  if (fill) {
-		var grd = ctx.createLinearGradient(x+width/2,y, x+width/2,y+height);
-		grd.addColorStop(0, "Yellow");		
-		grd.addColorStop(0.7, "Orange");
-		grd.addColorStop(1, "DarkOrange");
-		ctx.fillStyle = grd;
-		
-		ctx.fill();
-	  }
-	  if (stroke) {
-		ctx.stroke();
-	  }
+
+function setYellowGradientFill(ctx, x,y, width, height){
+	var grd = ctx.createLinearGradient(x+width/2,y, x+width/2,y+height);
+	grd.addColorStop(0, "Yellow");		
+	grd.addColorStop(0.7, "Orange");
+	grd.addColorStop(1, "DarkOrange");
+	ctx.fillStyle = grd;
+}
+
+function setPaddleGradient(ctx){
+ 	var grd = ctx.createRadialGradient(1, 1, 0.4,   1, 1, 1);
+	grd.addColorStop(0, "WHITE");
+	grd.addColorStop(0.20, "GRAY");
+	grd.addColorStop(0.35, "BLACK");
+	grd.addColorStop(0.4, "DARKbLUE");
+	grd.addColorStop(0.6, "bLUE");
+	grd.addColorStop(0.99, "DARKbLUE");
+	grd.addColorStop(1, "BLACK");
+	ctx.fillStyle = grd;
 }
 
 function loadSprites(files, completionHandler){
@@ -73,181 +57,6 @@ function loadSprites(files, completionHandler){
 	}
 }
 
-const Actions = {
-	Idle: 0,
-	Up: 1,
-	Down: 2,
-	Fire: 3,
-}
-
-class Keyboard{
-	constructor(){
-		this.delta =  {x:0, y:0};
-		this.sensitivity = 0.5;
-		this.keysDown = [];
-				
-		document.addEventListener('keydown', (ev) => {
-			if (this.isLeft(ev.keyCode) || this.isRight(ev.keyCode)){
-				this.keysDown.push(ev.keyCode);
-			}
-						
-			if (ev.key == "Space" || ev.keyCode == 32){
-				
-			}
-			
-			ev.preventDefault();    
-			return false;
-		}, false);
-		
-		document.addEventListener('keyup', (ev) => {
-			if (this.isLeft(ev.keyCode) || this.isRight(ev.keyCode)){
-				this.keysDown = this.keysDown.filter(x => x != ev.keyCode);
-			}
-			
-			ev.preventDefault();
-			return false;
-		}, false);
-	}
-	
-	isLeft(keyCode){			
-		return keyCode == 37 || keyCode == 65;
-	}
-	
-	isRight(keyCode){
-		return keyCode == 39 || keyCode == 68;
-	}
-	
-	getDeltaFromPreviousFrame(time){
-		if (!this.prevTime){
-			this.prevTime = time;
-			return {x:0, y:0};
-		}
-				
-		let dx = 0.0;
-		if (this.keysDown.length > 0){
-		let direction = this.keysDown[this.keysDown.length - 1];
-			if (this.isLeft(direction))
-				dx = -1.5;
-			else if (this.isRight(direction))
-				dx = 1.5;
-		}
-		let dt = time - this.prevTime;
-		this.prevTime = time;
-		return {x: dx * this.sensitivity * dt, y: this.delta.y * dt};
-	}
-}
-
-class Touch{	
-	constructor(){
-		var canvas = document.getElementById("MyCanvas");
-		this.previousDelta = {x: 0, y: 0};
-		this.deltaMovementFromDown = {x: 0, y: 0};
-		
-		canvas.addEventListener('touchstart', (e)=>{		
-			var touchobj = e.changedTouches[0];
-			var rect = canvas.getBoundingClientRect();
-			
-			let x = touchobj.clientX - rect.left;
-			let y = touchobj.clientY - rect.top;
-			
-			this.previousDelta = {x: 0, y: 0};
-			this.touchDown = {x: x, y: y};				
-			
-			e.preventDefault();
-		}, false);
-		
-		canvas.addEventListener('touchmove', (e)=>{
-			if (e.buttons == 0) return;
-			var touchobj = e.changedTouches[0];
-			var rect = canvas.getBoundingClientRect();
-			
-			let x = touchobj.clientX - rect.left;
-			let y = touchobj.clientY - rect.top;
-			
-			this.deltaMovementFromDown = {x: x - this.touchDown.x, y: y - this.touchDown.y};
-			
-			e.preventDefault();
-		}, false);
-		
-		canvas.addEventListener('touchend', (e)=>{
-			var touchobj = e.changedTouches[0];
-			var rect = canvas.getBoundingClientRect();
-			
-			let x = touchobj.clientX - rect.left;
-			let y = touchobj.clientY - rect.top;
-			
-			this.touchDown = null;
-			this.previousDelta = {x: 0, y: 0};
-			this.deltaMovementFromDown = {x: 0, y: 0};
-			e.preventDefault();
-		}, false);
-	}
-	
-	getDeltaFromPreviousFrame(time){
-		let ret = {x: this.deltaMovementFromDown.x - this.previousDelta.x, y: 0.0};
-		this.previousDelta = this.deltaMovementFromDown;		
-		return ret;
-	}
-}
-
-class MultiController{
-	constructor(a, b){
-		this.a = a;
-		this.b = b;
-	}
-	
-	getDeltaFromPreviousFrame(time){
-		let a = this.a.getDeltaFromPreviousFrame(time);
-		let b = this.b.getDeltaFromPreviousFrame(time);
-		return {x: a.x + b.x, y: a.y + b.y};
-	}
-	
-}
-
-function ellipse(context, cx, cy, rx, ry){
-        context.save(); // save state
-        context.beginPath();
-
-        context.translate(cx-rx, cy-ry);
-        context.scale(rx, ry);
-        context.arc(1, 1, 1, 0, 2 * Math.PI, false);
-
-        context.restore(); // restore to original state
-        context.stroke();
-}
-
-function ellipse2(context, cx, cy, rx, ry){
-        context.save(); // save state
-
-		
-        context.beginPath();
-        context.translate(cx-rx, cy-ry);
-        context.scale(rx, ry);
-		
-		var grd = context.createRadialGradient(1, 1, 0.4,   1, 1, 1);
-		grd.addColorStop(0, "WHITE");
-		grd.addColorStop(0.20, "GRAY");
-		grd.addColorStop(0.35, "BLACK");
-		grd.addColorStop(0.4, "DARKbLUE");
-		grd.addColorStop(0.6, "bLUE");
-		grd.addColorStop(0.99, "DARKbLUE");
-		grd.addColorStop(1, "BLACK");
-		context.fillStyle = grd;
-		//context.fillRect(0, 0, 150, 100);
-        context.arc(1, 1, 1, 0, 2 * Math.PI, false);
-		context.fill();
-        context.restore(); // restore to original state
-       
-}
-
-
-
-function lineFromPoints(p1, p2){
-	let m = (p2.y - p1.y) / (p2.x - p1.x);		
-	let c = p1.y - m * p1.x;
-	return {m: m, c: c};
-}
-
 class Block{
 	constructor(x,y,w,h, padding){
 		this.x = x;
@@ -259,82 +68,11 @@ class Block{
 		this.rect = new Rectangle(x,y,w,h, padding);
 	}
 	
-
 	draw(ctx){
 		roundRect(ctx, this.x, this.y, this.w, this.h, this.h / 3, true, true);		
-		//roundRect(ctx, this.x, this.y, this.w, this.h, 0, true, true);
 	}
 }
 
-class LineTrace{
-	constructor(x1,y1, x2,y2, duration){
-		this.x1 = x1;
-		this.y1 = y1;		
-		this.x2 = x2;
-		this.y2 = y2;
-		this.duration = duration;
-	}
-	
-	update(dt){
-		this.duration -= dt;
-	}
-	
-	draw(ctx){
-		ctx.beginPath();
-		ctx.moveTo(this.x1, this.y1);
-		ctx.lineTo(this.x2, this.y2);
-		ctx.stroke();
-	}
-}
-
-class CircleTrace{
-	constructor(x,y, r, duration){
-		this.x = x;
-		this.y = y;		
-		this.r = r;
-		this.duration = duration;
-	}
-	
-	update(dt){
-		this.duration -= dt;
-	}
-	
-	draw(ctx){
-		ctx.beginPath();
-		ctx.arc(this.x, this.y, this.r, 0, 2 * Math.PI);
-		ctx.stroke();
-	}
-}
-
-class Traces{
-	constructor(){
-		this.traces = [];
-	}
-	
-	addLine(x1,y1, x2,y2, duration){
-		let trace = new LineTrace(x1,y1, x2,y2, duration);
-		this.traces.push(trace);
-	}
-	
-	addCircle(x,y, r, duration){
-		let trace = new CircleTrace(x,y, r, duration);
-		this.traces.push(trace);
-	}
-	
-	update(dt){
-		for (let trace of this.traces){
-			trace.update(dt);
-		}
-		
-		this.traces = this.traces.filter( t=> t.duration > 0);
-	}
-	
-	draw(ctx){
-		for (let trace of this.traces){
-			trace.draw(ctx);
-		}
-	}	
-}
 
 class Game {
 
@@ -405,10 +143,34 @@ class Game {
 		ctx.drawImage(sprite, 0, 0, 800, 600);
 	}
 	
-	drawLevel(ctx){
+	addCollisionTrace(x, y, tangent, incidentAngle, reflectedAngle){
+		this.traces.addCircle(x, y, 7, 500);				
 		
+		this.traces.addLine(
+			x + 30 * Math.cos(tangent), y + 30 * Math.sin(tangent),
+			x - 30 * Math.cos(tangent), y - 30 * Math.sin(tangent),
+			500
+		);
+		
+		this.traces.addLine(
+			x, y,
+			x - 30 * Math.cos(tangent+ Math.PI / 2.0), y - 30 * Math.sin(tangent+ Math.PI / 2.0),
+			500
+		);
+		
+		this.traces.addLine(
+			x - 50 * Math.cos(incidentAngle), y - 50 * Math.sin(incidentAngle),
+			x, y,
+			500
+		);
+		
+		this.traces.addLine(
+			x - 50 * Math.cos(reflectedAngle), y - 50 * Math.sin(reflectedAngle),
+			x, y,
+			500
+		);
 	}
-		
+	
 	updateBall(dt, ctx){
 		this.traces.update(dt);
 	
@@ -418,21 +180,25 @@ class Game {
 		if (futureBall.y + this.ball.r / 2.0 > 600){
 			futureBall.y = 600 - this.ball.r / 2.0;
 			this.ball.dy *= -1;
+			audio.bounce.play();
 		}
 		
 		if (futureBall.y < this.ball.r / 2.0){
 			futureBall.y = this.ball.r / 2.0;
 			this.ball.dy *= -1;
+			audio.bounce.play();
 		}
 		
 		if (futureBall.x + this.ball.r / 2.0 > 800){
 			futureBall.x = 800 - this.ball.r / 2.0;
 			this.ball.dx *= -1;
+			audio.bounce.play();
 		}
 		
 		if (futureBall.x < this.ball.r / 2.0){
 			futureBall.x = this.ball.r / 2.0;
 			this.ball.dx *= -1;
+			audio.bounce.play();
 		}
 		
 		let vector = Vector.create(this.ball);
@@ -440,24 +206,14 @@ class Game {
 		for(let block of this.blocks){						
 			let collision = block.rect.collides(vector, dt, ctx);
 			if (collision){
-				this.drawBall(ctx);
-				
-				/*
-				this.traces.addCircle(collision.pt.x, collision.pt.y, 2, 1000);				
-				
-				this.traces.addLine(
-					collision.pt.x + 30 * Math.cos(collision.tangent), collision.pt.y + 30 * Math.sin(collision.tangent),
-					collision.pt.x - 30 * Math.cos(collision.tangent), collision.pt.y - 30 * Math.sin(collision.tangent),
-					1000
-				);
-				
-				this.traces.draw(ctx);
-				*/
+				this.drawBall(ctx);							
 
 				let ballSpeed = vector.getMagnitude();
 				let incidentAngle = vector.getDirectionAngle();
 				let reflectedAngle = 2 * collision.tangent + Math.PI - incidentAngle;
 
+
+				this.addCollisionTrace(collision.pt.x, collision.pt.y, collision.tangent, incidentAngle, reflectedAngle);
 			
 				this.ball.dx = -ballSpeed * Math.cos(reflectedAngle);
 				this.ball.dy = -ballSpeed * Math.sin(reflectedAngle);
@@ -466,18 +222,18 @@ class Game {
 				futureBall.y = collision.pt.y + this.ball.dy * (dt - collision.t);
 				
 				block.hitpoints--;
+				
+				audio.breakBlock.play();
 			}
 		}
 		
 		this.blocks = this.blocks.filter(b => b.hitpoints > 0);
 		if (this.blocks.length == 0){
+			audio.complete.play();
 			this.loadLevel();
 			return;
 		}
 		
-		this.traces.draw(ctx);
-
-			
 		
 		let ballRadius = this.ball.r;
 		
@@ -549,6 +305,9 @@ class Game {
 			
 				this.ball.x = intersectionPoint.x + this.ball.dx * (dt - intersectionTime[0]);
 				this.ball.y = intersectionPoint.y + this.ball.dy * (dt - intersectionTime[0]);
+				audio.bounce.play();						
+				
+				this.addCollisionTrace(intersectionPoint.x, intersectionPoint.y, tangentAngle, incidentAngle, reflectedAngle);
 			}else{
 				this.ball.x = futureBall.x;
 				this.ball.y = futureBall.y;
@@ -557,6 +316,8 @@ class Game {
 			this.ball.x = futureBall.x;
 			this.ball.y = futureBall.y;
 		}
+		
+		this.traces.draw(ctx);
 	}
 	
 	drawBall(ctx){
@@ -577,6 +338,7 @@ class Game {
 		
 		//ctx.strokeStyle = '#000000FF';
 		
+		//Draw ball center
 		//ctx.beginPath();
 		//ctx.arc(this.ball.x, this.ball.y, 1, 0, 2 * Math.PI);		
 		//ctx.stroke();
@@ -587,8 +349,8 @@ class Game {
 		let sprite = this.sprites["arcanoids"];
 		//ctx.drawImage(sprite, src.x, src.y, src.w, src.h, this.paddle.x  - 79/2, this.paddle.y - 28/2, 79, 28);
 		
-
-		ellipse2(ctx, this.paddle.x, this.paddle.y, this.paddle.w/2.0, this.paddle.h/2.0);
+		setPaddleGradient(ctx);
+		ellipse(ctx, this.paddle.x, this.paddle.y, this.paddle.w/2.0, this.paddle.h/2.0, true);		
 		//ellipse(ctx, this.paddle.x, this.paddle.y, (this.paddle.w + this.ball.w)/2.0, (this.paddle.h + this.ball.h)/2.0);
 	}
 	
@@ -608,32 +370,9 @@ class Game {
 		this.drawLevel(ctx);
 		
 		for(let block of this.blocks){
+			setYellowGradientFill(ctx, block.x, block.y, block.w, block.h);
 			block.draw(ctx);
-		}
-		
-		/*
-		ctx.beginPath();
-		ctx.arc(40, 40, 20, 0, 2 * Math.PI);
-		ctx.stroke();
-		
-		ctx.beginPath();
-		ctx.moveTo(10, 10);
-		ctx.lineTo(70, 60);
-		ctx.stroke();
-				
-		let line = this.lineFromPoints({x: 10, y:10}, {x: 70, y:60});
-		let circle = {x: 40, y:40, r: 20};
-		let pts = intersectLineCircle(line, circle);
-	
-	
-		ctx.beginPath();
-		ctx.arc(pts.p1.x, pts.p1.y, 5, 0, 2 * Math.PI);
-		ctx.stroke();
-		
-		ctx.beginPath();
-		ctx.arc(pts.p2.x, pts.p2.y, 5, 0, 2 * Math.PI);
-		ctx.stroke();
-		*/
+		}		
 	}
 	
 	checkCollision(time){

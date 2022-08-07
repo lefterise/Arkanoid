@@ -123,7 +123,7 @@ class Rectangle{
 		let xtop = vector.x + vector.dx * t;
 		
 		if (0 <= t && t <= dt && this.x <= xtop && xtop <= this.x + this.w){				
-			return {t:t, pt: {x: xtop, y: ytop}, tangent: Math.PI};
+			return {t:t, pt: {x: xtop, y: ytop}, tangent: 0};
 		}
 
 		
@@ -131,7 +131,7 @@ class Rectangle{
 		let yleft = vector.y + vector.dy * t;
 		
 		if (0 <= t && t <= dt && this.y <= yleft && yleft <= this.y + this.h){			
-			return {t:t, pt: {x: xleft, y: yleft}, tangent: Math.PI/2};
+			return {t:t, pt: {x: xleft, y: yleft}, tangent: -Math.PI/2};
 		}
 		
 		t = (xright - vector.x) / vector.dx
