@@ -367,7 +367,6 @@ class Game {
 		this.updateBall(dt,ctx);
 		this.drawPaddle(ctx);
 		this.drawBall(ctx);
-		this.drawLevel(ctx);
 		
 		for(let block of this.blocks){
 			setYellowGradientFill(ctx, block.x, block.y, block.w, block.h);
