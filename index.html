@@ -10,14 +10,29 @@ html, body {
 <script src="graphics.js"></script>
 <script src="input.js"></script>
 <script src="traces.js"></script>
+<script src="colorspace.js"></script>
 <script>
 
+let level1 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAICAYAAADA+m62AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAFiUAABYlAUlSJPAAAABfSURBVChTY/x/ku8/AxAw3rwFohDAXoJB6YIPwz2DLQwMB18wMIHEcCmafpIbTIP4THBFIEn+FDANMuHexzlgYTANMxGbCegAohCLCegAopAIwLizKhzsa0KASBMZGACXoipGJqVK1gAAAABJRU5ErkJggg==';
 
-function setYellowGradientFill(ctx, x,y, width, height){
+function loadLevelFromImage(file, callback){
+  const myImg = new Image();
+  myImg.crossOrigin = "Anonymous";
+  myImg.onload = () => {
+     const context = document.createElement('canvas').getContext('2d');
+     context.drawImage(myImg, 0, 0);
+     const data = context.getImageData(0, 0, myImg.width, myImg.height);
+	 callback(data);
+  }
+  
+  myImg.src = file; 
+}
+
+function setYellowGradientFill(ctx, x,y, width, height, hsl){
 	var grd = ctx.createLinearGradient(x+width/2,y, x+width/2,y+height);
-	grd.addColorStop(0, "Yellow");		
-	grd.addColorStop(0.7, "Orange");
-	grd.addColorStop(1, "DarkOrange");
+	grd.addColorStop(0,   "hsl(" + (hsl[0]+12) + "," + hsl[1] + "%," +  hsl[2] + "%)");		
+	grd.addColorStop(0.7, "hsl(" +  hsl[0]     + "," + hsl[1] + "%," +  hsl[2] + "%)");
+	grd.addColorStop(1,   "hsl(" +  hsl[0]     + "," + hsl[1] + "%," + (hsl[2] - 10) + "%)");
 	ctx.fillStyle = grd;
 }
 
@@ -58,12 +73,13 @@ function loadSprites(files, completionHandler){
 }
 
 class Block{
-	constructor(x,y,w,h, padding){
+	constructor(x,y,w,h, padding, hsl){
 		this.x = x;
 		this.y = y;
 		this.w = w;
 		this.h = h;
 		this.hitpoints = 1;
+		this.hsl = hsl;
 	
 		this.rect = new Rectangle(x,y,w,h, padding);
 	}
@@ -96,7 +112,7 @@ class Game {
 		
 		this.ball = {x: 20, y:200, dx: 0.25, dy: 0.25, r: 7}; // r: 30
 		
-		this.paddle ={x:410, y: 540, w:200, h:50};
+		this.paddle ={x:410, y: 640, w:200, h:50};
 		this.controller = new MultiController(new Keyboard(), new Touch());
 		
 		
@@ -121,12 +137,25 @@ class Game {
 	}
 
 	loadLevel(){
-		for(let r = 0; r < 4; ++r){
-			for(let c = 0; c < 7; ++c){
-				let block = new Block(50 + 98 * c, 50 + 32 * r, 96, 30, this.ball.r);
-				this.blocks.push(block);
+		loadLevelFromImage(level1, (data) => {
+			for(let r = 0; r < data.height; ++r){
+				for(let c = 0; c < data.width; ++c){
+					let i = (r * data.width + c) * 4;
+					let hsl = rgbToHsl(data.data[0 + i], data.data[1 + i], data.data[2 + i])
+					
+					let block = new Block(50 + 81 * c, 50 + 32 * r, 80, 30, this.ball.r, hsl);
+					this.blocks.push(block);		
+				}
 			}
-		}
+		
+		});
+		
+		//for(let r = 0; r < 4; ++r){
+		//	for(let c = 0; c < 7; ++c){
+		//		let block = new Block(50 + 98 * c, 50 + 32 * r, 96, 30, this.ball.r, (c+r) * 50);
+		//		this.blocks.push(block);
+		//	}
+		//}
 		this.ball = {x: 20, y:200, dx: 0.25, dy: 0.25, r: 7}; // r: 30
 	}
 	
@@ -140,7 +169,7 @@ class Game {
 	
 	drawBackground(ctx){
 		let sprite = this.sprites["background_exotic"];				
-		ctx.drawImage(sprite, 0, 0, 800, 600);
+		ctx.drawImage(sprite, 0, 0, 900, 700);
 	}
 	
 	addCollisionTrace(x, y, tangent, incidentAngle, reflectedAngle){
@@ -177,28 +206,28 @@ class Game {
 		let futureBall = {x: this.ball.x + this.ball.dx * dt,
 					      y: this.ball.y + this.ball.dy * dt};
 		
-		if (futureBall.y + this.ball.r / 2.0 > 600){
-			futureBall.y = 600 - this.ball.r / 2.0;
+		if (futureBall.y + this.ball.r / 2.0 > 700){
+			futureBall.y = 700 - this.ball.r / 2.0;
 			this.ball.dy *= -1;
-			audio.bounce.play();
+			//audio.bounce.play();
 		}
 		
 		if (futureBall.y < this.ball.r / 2.0){
 			futureBall.y = this.ball.r / 2.0;
 			this.ball.dy *= -1;
-			audio.bounce.play();
+			//audio.bounce.play();
 		}
 		
-		if (futureBall.x + this.ball.r / 2.0 > 800){
-			futureBall.x = 800 - this.ball.r / 2.0;
+		if (futureBall.x + this.ball.r / 2.0 > 900){
+			futureBall.x = 900 - this.ball.r / 2.0;
 			this.ball.dx *= -1;
-			audio.bounce.play();
+			//audio.bounce.play();
 		}
 		
 		if (futureBall.x < this.ball.r / 2.0){
 			futureBall.x = this.ball.r / 2.0;
 			this.ball.dx *= -1;
-			audio.bounce.play();
+			//audio.bounce.play();
 		}
 		
 		let vector = Vector.create(this.ball);
@@ -223,7 +252,7 @@ class Game {
 				
 				block.hitpoints--;
 				
-				audio.breakBlock.play();
+				//audio.breakBlock.play();
 			}
 		}
 		
@@ -305,7 +334,7 @@ class Game {
 			
 				this.ball.x = intersectionPoint.x + this.ball.dx * (dt - intersectionTime[0]);
 				this.ball.y = intersectionPoint.y + this.ball.dy * (dt - intersectionTime[0]);
-				audio.bounce.play();						
+				//audio.bounce.play();						
 				
 				this.addCollisionTrace(intersectionPoint.x, intersectionPoint.y, tangentAngle, incidentAngle, reflectedAngle);
 			}else{
@@ -369,7 +398,7 @@ class Game {
 		this.drawBall(ctx);
 		
 		for(let block of this.blocks){
-			setYellowGradientFill(ctx, block.x, block.y, block.w, block.h);
+			setYellowGradientFill(ctx, block.x, block.y, block.w, block.h, block.hsl);
 			block.draw(ctx);
 		}		
 	}
@@ -401,6 +430,6 @@ loadSprites(["arcanoids", "background_exotic", "ball", "ball_animation", "bullet
 </head>
 
 <body>
-<canvas id="MyCanvas" width="800" height="600" style="border:1px solid #000000; background-color:#000000;"></canvas>
+<canvas id="MyCanvas" width="900" height="700" style="border:1px solid #000000; background-color:#000000;"></canvas>
 </body>
 </html>
