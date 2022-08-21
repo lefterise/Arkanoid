@@ -112,6 +112,12 @@ class Particle{
 		this.ay = ay;
 		this.t = 0;
 		this.angle = Math.PI * Math.random();
+		
+		this.pts = [];
+		let n = 5;
+		for(let i = 0; i < n; ++i){
+			this.pts.push({x: -9 * Math.cos(2 * i * Math.PI / n), y: 6 * Math.sin(2 * i * Math.PI / n)});
+		}
 	}
 	
 	update(t){
@@ -123,12 +129,13 @@ class Particle{
 	}
 	
 	draw(ctx){
-		let r = this.t * 0.0025 * Math.PI;
+		let r = this.t * 0.0025 * Math.PI + this.angle;
 		ctx.beginPath();
-		ctx.moveTo(this.x,     this.y + Math.sin(r + Math.PI / 2 + this.angle) * 10);
-		ctx.lineTo(this.x - 7, this.y + Math.sin(r + this.angle) * 10);
-		ctx.lineTo(this.x + 7, this.y + Math.sin(r + this.angle) * 10)
 
+		ctx.moveTo(this.x + this.pts[0].x, this.y + Math.cos(r) * this.pts[0].y);
+		for (let i = 1; i < this.pts.length; ++i){
+			ctx.lineTo(this.x + this.pts[i].x, this.y + Math.cos(r) * this.pts[i].y);
+		}
 		//ctx.arc(this.x, this.y, 4, 0, 2 * Math.PI, false);		
 		ctx.fill();
 		ctx.stroke();
@@ -139,7 +146,7 @@ class ParticleEffect{
 	constructor(x, y, w, h, num, lifetime, hsl){
 		this.particles = [];
 		for (let i = 0; i < num; ++i){
-			let particle = new Particle(x + Math.random() * w, y + Math.random() * h, 0, -0.1 - Math.random() * 0.08, 0, 0.001);
+			let particle = new Particle(x + Math.random() * w, y + Math.random() * h, 0, -0.1 - Math.random() * 0.07, 0, 0.001);
 			this.particles.push(particle);
 		}
 		
@@ -363,7 +370,7 @@ class Game {
 				block.hitpoints--;
 				
 				if (block.hitpoints == 0){
-					this.effects.addParticleEffect(block.x, block.y, block.w, block.h, 20, block.hsl);
+					this.effects.addParticleEffect(block.x, block.y, block.w, block.h, 15, block.hsl);
 				}
 				
 				//audio.breakBlock.play();
@@ -510,13 +517,14 @@ class Game {
 		this.updateBall(dt,ctx);
 		this.effects.update(dt);
 		this.drawPaddle(ctx);
-		this.drawBall(ctx);
-		this.effects.draw(ctx);
+		this.drawBall(ctx);		
 		
 		for(let block of this.blocks){
 			setYellowGradientFill(ctx, block.x, block.y, block.w, block.h, block.hsl);
 			block.draw(ctx);
-		}		
+		}
+		
+		this.effects.draw(ctx);
 	}
 	
 	checkCollision(time){
