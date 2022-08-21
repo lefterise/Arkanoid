@@ -13,7 +13,17 @@ html, body {
 <script src="colorspace.js"></script>
 <script>
 
-let level1 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAICAYAAADA+m62AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAFiUAABYlAUlSJPAAAABfSURBVChTY/x/ku8/AxAw3rwFohDAXoJB6YIPwz2DLQwMB18wMIHEcCmafpIbTIP4THBFIEn+FDANMuHexzlgYTANMxGbCegAohCLCegAopAIwLizKhzsa0KASBMZGACXoipGJqVK1gAAAABJRU5ErkJggg==';
+var crackPattern = [];
+
+let levels =
+[ 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAJCAYAAAALpr0TAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAFiMAABYjAclRYGsAAABeSURBVChTY2TAAZQ2+vyHMhnu+W9hxKoQWREMwBVik5x+kpsh0/wrmM0EIrApAlmHTIMVwgDIBGwApBiuEN0EdABWiC6JTTELw6IXCPfdyGfAxWfcWRWO4RFMwMAAADVvKLaYNYkoAAAAAElFTkSuQmCC'
+, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABuSURBVChTY2RAAt7bA/5DmWCw1XMDijwYwBSBaGQ2iMYK/jxn+P/nFCuGAiYoDQYgRQyPWRkYZH8zoCuGuwFZEZiGAhaz32A1CBORFYFoNIBQiKwIi2LcJoJoJIASTmAPICmCuQ8rACnGDB4GBgCFqTs8DRTN5AAAAABJRU5ErkJggg=='
+, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAALCAYAAABGbhwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsIAAA7CARUoSoAAAABgSURBVChTY2QgANYXyv8H0UxgHh7gG/kMTOM18c8pVrBpIEDQRBBgMfvNiFMhsmkggNVqZEUg00A0E7pObIpAAGw1TBJdEzJgxCWJbBoIgDnoitEVgQCGr7Ep+v///38AwTgoNs2BMGcAAAAASUVORK5CYII='
+, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAALCAYAAABGbhwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABoSURBVChTY0AG9iv+/wdhdDYIMEFpgoARSsNB0KGfcFPW2bHD5VEUIiuCAZhiDKvX2rKh0DCAodDR0RGFhgGiPQNX+B8IQPT+/fvBfBh97do1VHeDFGIDMIVEW40CQLphJiCzGRgYGABmtExtgG+irwAAAABJRU5ErkJggg=='
+, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAALCAYAAABGbhwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABtSURBVChTY0AHJx15/oMwlAsHTFAaDP7Ps/1vFmsIZ4MZUABXiM0UZMWMUBqrQhAw3/8FrAZMgBTBrDy1+DwDMhsEQIpR3IgPkGY1DPx/uwCh+MZVBkbrbrg80VYTrRAD/D9a+h+EoVwoYGAAAHq0Lg15kcxqAAAAAElFTkSuQmCC'
+, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAALCAYAAABGbhwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAB/SURBVChTY0AHnckW/0EYyoUDJigNBiAF4gzvGEC4048NRTEjlIYrQgYvXz9gKN/0C6wGxUR8AKwQZlrNzm9gQRAAscVFFeBOIM1EYgB5nrn/5geUBVTEIARlQQDcM2AeOhA1Yqj3lwPLsYCIb2+egSgwSJh7C2wVTAEEMDAAAOs2MqjmOIg9AAAAAElFTkSuQmCC'
+, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAxSURBVChTYxgCgPH/rez/UDZewPj/hDJRCpmgNEFAtELG/+UMRLqRgeEvlI0HMDAAAH59Cqb70d6OAAAAAElFTkSuQmCC'
+];
 
 function loadLevelFromImage(file, callback){
   const myImg = new Image();
@@ -73,22 +83,109 @@ function loadSprites(files, completionHandler){
 }
 
 class Block{
-	constructor(x,y,w,h, padding, hsl){
+	constructor(x,y,w,h, padding, hsl, hitpoint){
 		this.x = x;
 		this.y = y;
 		this.w = w;
 		this.h = h;
-		this.hitpoints = 1;
+		this.hitpoints = hitpoint;
 		this.hsl = hsl;
 	
 		this.rect = new Rectangle(x,y,w,h, padding);
 	}
 	
 	draw(ctx){
-		roundRect(ctx, this.x, this.y, this.w, this.h, this.h / 3, true, true);		
+		roundRect(ctx, this.x, this.y, this.w, this.h, this.h / 3, true, true);								
+		
+		ctx.fillStyle = crackPattern[this.hitpoints - 1];
+		roundRect(ctx, this.x, this.y, this.w, this.h, this.h / 3, true, true);	
 	}
 }
 
+class Particle{
+	constructor(x, y, vx, vy, ax, ay){
+		this.x = x;
+		this.y = y;		
+		this.vx = vx;
+		this.vy = vy;		
+		this.ax = ax;
+		this.ay = ay;
+		this.t = 0;
+		this.angle = Math.PI * Math.random();
+	}
+	
+	update(t){
+		this.vx += this.ax * t;
+		this.vy += this.ay * t;
+		this.x  += this.vx * t;
+		this.y  += this.vy * t;
+		this.t  += t;
+	}
+	
+	draw(ctx){
+		let r = this.t * 0.0025 * Math.PI;
+		ctx.beginPath();
+		ctx.moveTo(this.x,     this.y + Math.sin(r + Math.PI / 2 + this.angle) * 10);
+		ctx.lineTo(this.x - 7, this.y + Math.sin(r + this.angle) * 10);
+		ctx.lineTo(this.x + 7, this.y + Math.sin(r + this.angle) * 10)
+
+		//ctx.arc(this.x, this.y, 4, 0, 2 * Math.PI, false);		
+		ctx.fill();
+		ctx.stroke();
+	}
+}
+
+class ParticleEffect{
+	constructor(x, y, w, h, num, lifetime, hsl){
+		this.particles = [];
+		for (let i = 0; i < num; ++i){
+			let particle = new Particle(x + Math.random() * w, y + Math.random() * h, 0, -0.1 - Math.random() * 0.08, 0, 0.001);
+			this.particles.push(particle);
+		}
+		
+		this.lifetime = lifetime;
+		this.t = 0;
+		this.hsl = hsl;
+	}
+	
+	update(t){
+		for(let particle of this.particles){
+			particle.update(t);
+		}
+		this.t += t;
+	}
+	
+	draw(ctx){
+		ctx.fillStyle = "hsl(" + this.hsl[0] + "," + this.hsl[1] + "%," +  this.hsl[2] + "%)";
+		for(let particle of this.particles){
+			particle.draw(ctx);
+		}
+	}
+}
+
+class Effects{
+	constructor(){
+		this.effects = [];
+	}
+	
+	addParticleEffect(x, y, w, h, num, hsl){
+		this.effects.push(new ParticleEffect(x, y, w, h, num, 1500, hsl));
+	}
+	
+	update(t){
+		for(let effect of this.effects){
+			effect.update(t);
+		}
+		
+		this.effects = this.effects.filter(e => e.t < e.lifetime);
+	}
+	
+	draw(ctx){
+		for(let effect of this.effects){
+			effect.draw(ctx);
+		}
+	}
+}
 
 class Game {
 
@@ -127,24 +224,37 @@ class Game {
 			let y = e.clientY - rect.top;
 			
 			this.ball.x =x;
-			this.ball.y =y;						
+			this.ball.y =y;
 		}, false);
 		
+		crackPattern.push(ctx.createPattern(this.sprites['crack10'], 'repeat'));
+		crackPattern.push(ctx.createPattern(this.sprites['crack10a'], 'repeat'));
+		crackPattern.push(ctx.createPattern(this.sprites['crack10b'], 'repeat'));
+		crackPattern.push(ctx.createPattern(this.sprites['crack10c'], 'repeat'));
+		crackPattern.push(ctx.createPattern(this.sprites['crack10d'], 'repeat'));
 		
 		this.blocks = [];
 		
+		this.effects = new Effects();
+		
+		this.levelId = 0;
 		this.loadLevel();
 	}
 
 	loadLevel(){
-		loadLevelFromImage(level1, (data) => {
+		let level = levels[this.levelId++];
+		
+		loadLevelFromImage(level, (data) => {
 			for(let r = 0; r < data.height; ++r){
 				for(let c = 0; c < data.width; ++c){
 					let i = (r * data.width + c) * 4;
 					let hsl = rgbToHsl(data.data[0 + i], data.data[1 + i], data.data[2 + i])
-					
-					let block = new Block(50 + 81 * c, 50 + 32 * r, 80, 30, this.ball.r, hsl);
-					this.blocks.push(block);		
+					let alpha = data.data[3 + i];
+					if (alpha != 0){
+					    let hp = 256 - alpha + 0;
+						let block = new Block(50 + 81 * c, 50 + 32 * r, 80, 30, this.ball.r, hsl, hp);
+						this.blocks.push(block);
+					}
 				}
 			}
 		
@@ -251,6 +361,10 @@ class Game {
 				futureBall.y = collision.pt.y + this.ball.dy * (dt - collision.t);
 				
 				block.hitpoints--;
+				
+				if (block.hitpoints == 0){
+					this.effects.addParticleEffect(block.x, block.y, block.w, block.h, 20, block.hsl);
+				}
 				
 				//audio.breakBlock.play();
 			}
@@ -394,8 +508,10 @@ class Game {
 		
 		this.drawBackground(ctx);
 		this.updateBall(dt,ctx);
+		this.effects.update(dt);
 		this.drawPaddle(ctx);
 		this.drawBall(ctx);
+		this.effects.draw(ctx);
 		
 		for(let block of this.blocks){
 			setYellowGradientFill(ctx, block.x, block.y, block.w, block.h, block.hsl);
@@ -418,7 +534,7 @@ var audio = {
 	loss: new Audio('sounds/loss.wav'),
 };
 	
-loadSprites(["arcanoids", "background_exotic", "ball", "ball_animation", "bullet", "keys", "left_right_arrow", "rainbow", "tiles"], 
+loadSprites(["background_exotic", "crack10", "crack10a", "crack10b", "crack10c", "crack10d"], 
 	(sprites, succeeded,failed)=>{	
 		game.setSprites(sprites);
 		game.start();
