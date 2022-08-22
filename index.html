@@ -112,12 +112,28 @@ class Particle{
 		this.ay = ay;
 		this.t = 0;
 		this.angle = Math.PI * Math.random();
+				
+		this.points = 
+		    [{x: -10, y: -5, z: -5}
+			,{x:  10, y: -5, z: -5}
+			,{x:  10, y:  5, z: -5}
+			,{x: -10, y : 5, z: -5}
+			,{x:  10, y: -5, z:  5}
+			,{x: -10, y: -5, z:  5}
+			,{x:  10, y:  5, z:  5}
+			,{x: -10, y:  5, z:  5}
+			]
 		
-		this.pts = [];
-		let n = 5;
-		for(let i = 0; i < n; ++i){
-			this.pts.push({x: -9 * Math.cos(2 * i * Math.PI / n), y: 6 * Math.sin(2 * i * Math.PI / n)});
-		}
+		this.faces = 
+			[[0,1,2,3]
+			,[0,1,4,5]
+			,[5,4,6,7]
+			,[3,2,6,7]
+			,[0,5,7,3]
+			,[1,4,6,2]
+			];
+			
+			this.points = this.rotateAll(this.points, Math.PI / 4, this.rotateY);
 	}
 	
 	update(t){
@@ -128,17 +144,52 @@ class Particle{
 		this.t  += t;
 	}
 	
-	draw(ctx){
-		let r = this.t * 0.0025 * Math.PI + this.angle;
-		ctx.beginPath();
-
-		ctx.moveTo(this.x + this.pts[0].x, this.y + Math.cos(r) * this.pts[0].y);
-		for (let i = 1; i < this.pts.length; ++i){
-			ctx.lineTo(this.x + this.pts[i].x, this.y + Math.cos(r) * this.pts[i].y);
+	rotateX(p,r){
+		return {x: p.x
+			   ,y: p.y * Math.cos(r) - p.z * Math.sin(r)
+			   ,z: p.y * Math.sin(r) + p.z * Math.cos(r)
+		};
+	}
+	
+	rotateY(p,r){
+		return {x:  p.x * Math.cos(r) + p.z * Math.sin(r)
+			   ,y:  p.y 
+			   ,z: -p.x * Math.sin(r) + p.z * Math.cos(r)
+		};
+	}
+	
+	rotateAll(pts,r, func){
+		return pts.map(x=>func(x,r));
+	}
+	
+	getSumZ(face, points){
+		let z = 0;
+		for (let p of face){
+			z += points[p].z;
 		}
-		//ctx.arc(this.x, this.y, 4, 0, 2 * Math.PI, false);		
-		ctx.fill();
-		ctx.stroke();
+		return z;
+	}
+	
+	draw(ctx){
+		let r = this.t * 0.002 * Math.PI + this.angle;
+		
+		let rotatedPoints = this.rotateAll(this.points, r, this.rotateX);
+		let sortedFaces = this.faces;
+		sortedFaces.sort((a,b)=>{ return this.getSumZ(a, rotatedPoints) < this.getSumZ(b, rotatedPoints); });
+		
+		for (let face of sortedFaces){
+			ctx.beginPath();			
+			let p = rotatedPoints[face[face.length-1]];
+			ctx.moveTo(this.x + p.x, this.y + p.y);
+			
+			for (let pt of face){
+				p = rotatedPoints[pt];
+				ctx.lineTo(this.x + p.x, this.y + p.y);
+			}
+			ctx.fill();
+			ctx.stroke();
+		}		
+
 	}
 }
 
@@ -147,6 +198,8 @@ class ParticleEffect{
 		this.particles = [];
 		for (let i = 0; i < num; ++i){
 			let particle = new Particle(x + Math.random() * w, y + Math.random() * h, 0, -0.1 - Math.random() * 0.07, 0, 0.001);
+			
+			//let particle = new Particle(x + Math.random() * w, y + Math.random() * h, 0, -0.01 - Math.random() * 0.007, 0, 0.0001);
 			this.particles.push(particle);
 		}
 		
@@ -370,20 +423,14 @@ class Game {
 				block.hitpoints--;
 				
 				if (block.hitpoints == 0){
-					this.effects.addParticleEffect(block.x, block.y, block.w, block.h, 15, block.hsl);
+					this.effects.addParticleEffect(block.x, block.y, block.w, block.h, 10, block.hsl);
 				}
 				
 				//audio.breakBlock.play();
 			}
 		}
 		
-		this.blocks = this.blocks.filter(b => b.hitpoints > 0);
-		if (this.blocks.length == 0){
-			audio.complete.play();
-			this.loadLevel();
-			return;
-		}
-		
+		this.blocks = this.blocks.filter(b => b.hitpoints > 0);		
 		
 		let ballRadius = this.ball.r;
 		
@@ -525,6 +572,12 @@ class Game {
 		}
 		
 		this.effects.draw(ctx);
+		
+		if (this.blocks.length == 0){
+			audio.complete.play();
+			this.loadLevel();
+			return;
+		}
 	}
 	
 	checkCollision(time){
