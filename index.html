@@ -320,12 +320,6 @@ class Game {
 		
 		});
 		
-		//for(let r = 0; r < 4; ++r){
-		//	for(let c = 0; c < 7; ++c){
-		//		let block = new Block(50 + 98 * c, 50 + 32 * r, 96, 30, this.ball.r, (c+r) * 50);
-		//		this.blocks.push(block);
-		//	}
-		//}
 		this.ball = {x: 20, y:200, dx: 0.25, dy: 0.25, r: 7}; // r: 30
 	}
 	
@@ -339,7 +333,12 @@ class Game {
 	
 	drawBackground(ctx){
 		let sprite = this.sprites["background_exotic"];				
-		ctx.drawImage(sprite, 0, 0, 900, 700);
+		ctx.drawImage(sprite, 0, 0, 900, 800);
+		
+		ctx.beginPath();			
+		ctx.moveTo(  0, 700);
+		ctx.lineTo(900, 700);
+		ctx.stroke();
 	}
 	
 	addCollisionTrace(x, y, tangent, incidentAngle, reflectedAngle){
@@ -423,10 +422,10 @@ class Game {
 				block.hitpoints--;
 				
 				if (block.hitpoints == 0){
-					this.effects.addParticleEffect(block.x, block.y, block.w, block.h, 10, block.hsl);
+					this.effects.addParticleEffect(block.x, block.y, block.w, block.h, 8, block.hsl);
 				}
 				
-				//audio.breakBlock.play();
+				audio.playSoundBreakBlock();
 			}
 		}
 		
@@ -502,7 +501,7 @@ class Game {
 			
 				this.ball.x = intersectionPoint.x + this.ball.dx * (dt - intersectionTime[0]);
 				this.ball.y = intersectionPoint.y + this.ball.dy * (dt - intersectionTime[0]);
-				//audio.bounce.play();						
+				audio.bounce.play();						
 				
 				this.addCollisionTrace(intersectionPoint.x, intersectionPoint.y, tangentAngle, incidentAngle, reflectedAngle);
 			}else{
@@ -588,11 +587,17 @@ class Game {
 var game = new Game();
 
 var audio = {
-	bounce: new Audio('sounds/bounce.wav'),
-	breakBlock: new Audio('sounds/break.wav'),
+	bounce: new Audio('sounds/hit2.mp3'),
+	breakBlock: [new Audio('sounds/hit1.mp3'), new Audio('sounds/hit1.mp3'), new Audio('sounds/hit1.mp3'), new Audio('sounds/hit1.mp3')],
 	complete: new Audio('sounds/complete.wav'),
 	launch: new Audio('sounds/launch.wav'),
 	loss: new Audio('sounds/loss.wav'),
+	
+	breakBlockChannel: 0,
+	playSoundBreakBlock: ()=>{
+		audio.breakBlockChannel = (audio.breakBlockChannel + 1) % audio.breakBlock.length;
+		audio.breakBlock[audio.breakBlockChannel].play()
+	}
 };
 	
 loadSprites(["background_exotic", "crack10", "crack10a", "crack10b", "crack10c", "crack10d"], 
@@ -607,6 +612,6 @@ loadSprites(["background_exotic", "crack10", "crack10a", "crack10b", "crack10c",
 </head>
 
 <body>
-<canvas id="MyCanvas" width="900" height="700" style="border:1px solid #000000; background-color:#000000;"></canvas>
+<canvas id="MyCanvas" width="900" height="800" style="border:1px solid #000000; background-color:#000000;"></canvas>
 </body>
 </html>
