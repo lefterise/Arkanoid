@@ -11,6 +11,7 @@ html, body {
 <script src="input.js"></script>
 <script src="traces.js"></script>
 <script src="colorspace.js"></script>
+<script src="particle_effects.js"></script>
 <script>
 
 var crackPattern = [];
@@ -38,7 +39,7 @@ function loadLevelFromImage(file, callback){
   myImg.src = file; 
 }
 
-function setYellowGradientFill(ctx, x,y, width, height, hsl){
+function setBlockGradientFill(ctx, x, y, width, height, hsl){
 	var grd = ctx.createLinearGradient(x+width/2,y, x+width/2,y+height);
 	grd.addColorStop(0,   "hsl(" + (hsl[0]+12) + "," + hsl[1] + "%," +  hsl[2] + "%)");		
 	grd.addColorStop(0.7, "hsl(" +  hsl[0]     + "," + hsl[1] + "%," +  hsl[2] + "%)");
@@ -102,150 +103,6 @@ class Block{
 	}
 }
 
-class Particle{
-	constructor(x, y, vx, vy, ax, ay){
-		this.x = x;
-		this.y = y;		
-		this.vx = vx;
-		this.vy = vy;		
-		this.ax = ax;
-		this.ay = ay;
-		this.t = 0;
-		this.angle = Math.PI * Math.random();
-				
-		this.points = 
-		    [{x: -10, y: -5, z: -5}
-			,{x:  10, y: -5, z: -5}
-			,{x:  10, y:  5, z: -5}
-			,{x: -10, y : 5, z: -5}
-			,{x:  10, y: -5, z:  5}
-			,{x: -10, y: -5, z:  5}
-			,{x:  10, y:  5, z:  5}
-			,{x: -10, y:  5, z:  5}
-			]
-		
-		this.faces = 
-			[[0,1,2,3]
-			,[0,1,4,5]
-			,[5,4,6,7]
-			,[3,2,6,7]
-			,[0,5,7,3]
-			,[1,4,6,2]
-			];
-			
-			this.points = this.rotateAll(this.points, Math.PI / 4, this.rotateY);
-	}
-	
-	update(t){
-		this.vx += this.ax * t;
-		this.vy += this.ay * t;
-		this.x  += this.vx * t;
-		this.y  += this.vy * t;
-		this.t  += t;
-	}
-	
-	rotateX(p,r){
-		return {x: p.x
-			   ,y: p.y * Math.cos(r) - p.z * Math.sin(r)
-			   ,z: p.y * Math.sin(r) + p.z * Math.cos(r)
-		};
-	}
-	
-	rotateY(p,r){
-		return {x:  p.x * Math.cos(r) + p.z * Math.sin(r)
-			   ,y:  p.y 
-			   ,z: -p.x * Math.sin(r) + p.z * Math.cos(r)
-		};
-	}
-	
-	rotateAll(pts,r, func){
-		return pts.map(x=>func(x,r));
-	}
-	
-	getSumZ(face, points){
-		let z = 0;
-		for (let p of face){
-			z += points[p].z;
-		}
-		return z;
-	}
-	
-	draw(ctx){
-		let r = this.t * 0.002 * Math.PI + this.angle;
-		
-		let rotatedPoints = this.rotateAll(this.points, r, this.rotateX);
-		let sortedFaces = this.faces;
-		sortedFaces.sort((a,b)=>{ return this.getSumZ(a, rotatedPoints) < this.getSumZ(b, rotatedPoints); });
-		
-		for (let face of sortedFaces){
-			ctx.beginPath();			
-			let p = rotatedPoints[face[face.length-1]];
-			ctx.moveTo(this.x + p.x, this.y + p.y);
-			
-			for (let pt of face){
-				p = rotatedPoints[pt];
-				ctx.lineTo(this.x + p.x, this.y + p.y);
-			}
-			ctx.fill();
-			ctx.stroke();
-		}		
-
-	}
-}
-
-class ParticleEffect{
-	constructor(x, y, w, h, num, lifetime, hsl){
-		this.particles = [];
-		for (let i = 0; i < num; ++i){
-			let particle = new Particle(x + Math.random() * w, y + Math.random() * h, 0, -0.1 - Math.random() * 0.07, 0, 0.001);
-			
-			//let particle = new Particle(x + Math.random() * w, y + Math.random() * h, 0, -0.01 - Math.random() * 0.007, 0, 0.0001);
-			this.particles.push(particle);
-		}
-		
-		this.lifetime = lifetime;
-		this.t = 0;
-		this.hsl = hsl;
-	}
-	
-	update(t){
-		for(let particle of this.particles){
-			particle.update(t);
-		}
-		this.t += t;
-	}
-	
-	draw(ctx){
-		ctx.fillStyle = "hsl(" + this.hsl[0] + "," + this.hsl[1] + "%," +  this.hsl[2] + "%)";
-		for(let particle of this.particles){
-			particle.draw(ctx);
-		}
-	}
-}
-
-class Effects{
-	constructor(){
-		this.effects = [];
-	}
-	
-	addParticleEffect(x, y, w, h, num, hsl){
-		this.effects.push(new ParticleEffect(x, y, w, h, num, 1500, hsl));
-	}
-	
-	update(t){
-		for(let effect of this.effects){
-			effect.update(t);
-		}
-		
-		this.effects = this.effects.filter(e => e.t < e.lifetime);
-	}
-	
-	draw(ctx){
-		for(let effect of this.effects){
-			effect.draw(ctx);
-		}
-	}
-}
 
 class Game {
 
@@ -263,10 +120,7 @@ class Game {
 		}, false);		
 		
 		setInterval(()=>window.requestAnimationFrame((time)=>this.draw(ctx, time)), 8);
-		
-		this.frames = [];
-		this.frames.push({x: 191, y: 1, w: 79, h: 28})
-		
+			
 		this.ball = {x: 20, y:200, dx: 0.25, dy: 0.25, r: 7}; // r: 30
 		
 		this.paddle ={x:410, y: 640, w:200, h:50};
@@ -411,7 +265,7 @@ class Game {
 				let reflectedAngle = 2 * collision.tangent + Math.PI - incidentAngle;
 
 
-				this.addCollisionTrace(collision.pt.x, collision.pt.y, collision.tangent, incidentAngle, reflectedAngle);
+				//this.addCollisionTrace(collision.pt.x, collision.pt.y, collision.tangent, incidentAngle, reflectedAngle);
 			
 				this.ball.dx = -ballSpeed * Math.cos(reflectedAngle);
 				this.ball.dy = -ballSpeed * Math.sin(reflectedAngle);
@@ -449,6 +303,7 @@ class Game {
 			let reflectedAngle = 2 * tangentAngle + Math.PI - incidentAngle;
 				
 			if (intersectionTime[0] > 0){ // if ball will intersect the ellipse at some time in the future
+				
 				ctx.beginPath();
 				ctx.arc(intersectionPoint.x, intersectionPoint.y, this.ball.r, 0, 2 * Math.PI);
 				ctx.stroke();
@@ -476,6 +331,7 @@ class Game {
 				ctx.moveTo(intersectionPoint.x, intersectionPoint.y);
 				ctx.lineTo(intersectionPoint.x - 100 * Math.cos(reflectedAngle), intersectionPoint.y - 100 * Math.sin(reflectedAngle));
 				ctx.stroke();
+				
 			}
 		
 			if (intersectionTime[0] < 0 && intersectionTime[1] > 0){ //ball already inside paddle
@@ -503,7 +359,7 @@ class Game {
 				this.ball.y = intersectionPoint.y + this.ball.dy * (dt - intersectionTime[0]);
 				audio.bounce.play();						
 				
-				this.addCollisionTrace(intersectionPoint.x, intersectionPoint.y, tangentAngle, incidentAngle, reflectedAngle);
+				//this.addCollisionTrace(intersectionPoint.x, intersectionPoint.y, tangentAngle, incidentAngle, reflectedAngle);
 			}else{
 				this.ball.x = futureBall.x;
 				this.ball.y = futureBall.y;
@@ -541,13 +397,9 @@ class Game {
 	}
 	
 	drawPaddle(ctx){
-		let src = this.frames[0];
-		let sprite = this.sprites["arcanoids"];
-		//ctx.drawImage(sprite, src.x, src.y, src.w, src.h, this.paddle.x  - 79/2, this.paddle.y - 28/2, 79, 28);
-		
 		setPaddleGradient(ctx);
-		ellipse(ctx, this.paddle.x, this.paddle.y, this.paddle.w/2.0, this.paddle.h/2.0, true);		
-		//ellipse(ctx, this.paddle.x, this.paddle.y, (this.paddle.w + this.ball.w)/2.0, (this.paddle.h + this.ball.h)/2.0);
+		ellipse(ctx, this.paddle.x, this.paddle.y, this.paddle.w/2.0, this.paddle.h/2.0, true, true);					
+		//ellipse(ctx, this.paddle.x, this.paddle.y, this.paddle.w/2.0 + this.ball.r, this.paddle.h / 2.0 + this.ball.r, false, true);	
 	}
 	
 	draw(ctx, time){	
@@ -566,7 +418,7 @@ class Game {
 		this.drawBall(ctx);		
 		
 		for(let block of this.blocks){
-			setYellowGradientFill(ctx, block.x, block.y, block.w, block.h, block.hsl);
+			setBlockGradientFill(ctx, block.x, block.y, block.w, block.h, block.hsl);
 			block.draw(ctx);
 		}
 		
@@ -577,10 +429,6 @@ class Game {
 			this.loadLevel();
 			return;
 		}
-	}
-	
-	checkCollision(time){
-	
 	}
 	
 }

@@ -33,7 +33,7 @@ function roundRect(
 	}
 }
 
-function ellipse(context, cx, cy, rx, ry){
+function ellipse(context, cx, cy, rx, ry, fill = false, stroke = true){
 	context.save(); // save state
 	context.beginPath();
 
@@ -41,7 +41,11 @@ function ellipse(context, cx, cy, rx, ry){
 	context.scale(rx, ry);
 	context.arc(1, 1, 1, 0, 2 * Math.PI, false);
 
-	context.fill();	
+	if (fill) {	
+		context.fill();	
+	}
 	context.restore(); // restore to original state
-	context.stroke();	
+	if (stroke) {
+		context.stroke();
+	}
 }
